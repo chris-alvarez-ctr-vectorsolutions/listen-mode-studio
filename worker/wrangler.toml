@@ -1,0 +1,12 @@
+name = "module-audio-studio-proxy"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Comma-separated list of origins allowed to call this worker.
+ALLOWED_ORIGINS = "http://localhost:5173,https://chris-alvarez-ctr-vectorsolutions.github.io"
+
+# Secrets (set with `wrangler secret put NAME`):
+#   ANTHROPIC_API_KEY
+#   ELEVENLABS_API_KEY
+#   APP_TOKEN   (optional; if set, the app must send it as x-app-token)
