@@ -12,8 +12,13 @@ export default function Settings() {
 
   async function load() {
     saveSettings(s);
-    try { setVoices(await listVoices()); setModels(await listModels()); setMsg('Loaded your voices and models.'); }
-    catch (e) { setMsg(e.message); }
+    const [v, m] = await Promise.allSettled([listVoices(), listModels()]);
+    if (v.status === 'fulfilled') setVoices(v.value);
+    if (m.status === 'fulfilled') setModels(m.value);
+    const failed = [v, m].filter(r => r.status === 'rejected').map(r => r.reason.message);
+    setMsg(failed.length
+      ? `${failed.join(' ')} If your ElevenLabs key can't list voices or models, that's fine: type the model and paste voice IDs below.`
+      : 'Loaded your voices and models.');
   }
 
   return (
@@ -42,7 +47,7 @@ export default function Settings() {
       <section className="space-y-4 rounded-lg border border-rule bg-panel p-5">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">Voices</h2>
-          <button className="btn" onClick={load}>Load my voices and models</button>
+          <button className="btn" onClick={load}>Load voices and models (optional)</button>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div><label className="label" htmlFor="em">ElevenLabs model</label>

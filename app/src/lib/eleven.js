@@ -23,7 +23,7 @@ export async function dialogue(inputs, { previousRequestIds = [] } = {}) {
 export async function listVoices() {
   const s = loadSettings();
   const res = await fetch(`${base(s)}/v1/voices`, { headers: workerHeaders(s) });
-  if (!res.ok) throw new Error(`Couldn't load voices (${res.status}).`);
+  if (!res.ok) throw new Error(`Couldn't load voices (${res.status}): ${(await res.text()).slice(0, 200)}`);
   const data = await res.json();
   return (data.voices || []).map(v => ({ id: v.voice_id, name: v.name }));
 }
@@ -31,7 +31,7 @@ export async function listVoices() {
 export async function listModels() {
   const s = loadSettings();
   const res = await fetch(`${base(s)}/v1/models`, { headers: workerHeaders(s) });
-  if (!res.ok) throw new Error(`Couldn't load models (${res.status}).`);
+  if (!res.ok) throw new Error(`Couldn't load models (${res.status}): ${(await res.text()).slice(0, 200)}`);
   const data = await res.json();
   return (Array.isArray(data) ? data : data.models || [])
     .filter(m => m.can_do_text_to_speech !== false)
