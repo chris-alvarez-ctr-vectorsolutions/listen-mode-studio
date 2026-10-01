@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { getModule, saveModule } from '../lib/store.js';
 import { addRuleToKit, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
+import { EXAMPLE_FIELDS, SEED_FIELDS, composeSeed, missingRequired, seedFieldsOf } from '../lib/seed.js';
 import { parsePerformance } from '../lib/script.js';
 import { readFileText } from '../lib/download.js';
 import Markdown from '../components/Markdown.jsx';
@@ -30,6 +31,21 @@ export default function Workspace() {
 
   useEffect(() => { getModule(id).then(setBoth); }, [id]);
   if (!m) return <p className="text-muted">Loading…</p>;
+
+  const setSeedField = (fid, value) => {
+    const seedFields = { ...seedFieldsOf(cur()), [fid]: value };
+    setBoth({ ...cur(), seedFields, seed: composeSeed(seedFields) });
+  };
+  const continueToLedger = () => {
+    const miss = missingRequired(seedFieldsOf(cur())).filter(() => !cur().sources.length);
+    if (miss.length && !confirm(`Missing: ${miss.join(', ')}. The ledger will likely come back with nothing to work from. Continue anyway?`)) return;
+    saveModule(cur()); setActive('ledger');
+  };
+  const loadExample = () => {
+    const hasText = Object.values(seedFieldsOf(cur())).some(v => v && v.trim());
+    if (hasText && !confirm('Replace what is in the seed fields with the example?')) return;
+    update({ seedFields: { ...EXAMPLE_FIELDS }, seed: composeSeed(EXAMPLE_FIELDS) });
+  };
 
   const stages = kit.stages;
   const update = async patch => { const next = { ...cur(), ...patch }; setBoth(next); await saveModule(next); return next; };
@@ -137,9 +153,17 @@ export default function Workspace() {
           <div className="space-y-6">
             <div>
               <h2 className="text-lg font-semibold">Seed the module</h2>
-              <p className="text-sm text-muted">A rough outline is fine. List the objectives, which topics can be skipped, the sector and roles, and anything else you know.</p>
+              <p className="text-sm text-muted">Fill in what you know. Content claims matter most: the script can only say what is listed there or in an attached source file.</p>
             </div>
-            <textarea className="field h-64 font-script" value={m.seed} onChange={e => setBoth({ ...cur(), seed: e.target.value })} onBlur={() => saveModule(cur())} placeholder="Objectives, skip rules, sector and roles, versions if you know them..." />
+            {SEED_FIELDS.map(f => (
+              <div key={f.id}>
+                <label className="label" htmlFor={`seed-${f.id}`}>{f.label}{f.required && <span className="text-onair"> *</span>}</label>
+                <p className="mb-1 text-xs text-muted">{f.help}</p>
+                <textarea id={`seed-${f.id}`} className="field font-script" rows={f.rows} placeholder={f.placeholder}
+                  value={seedFieldsOf(m)[f.id] || ''}
+                  onChange={e => setSeedField(f.id, e.target.value)} onBlur={() => saveModule(cur())} />
+              </div>
+            ))}
             <div>
               <label className="label" htmlFor="src">Source files (text or Markdown)</label>
               <input id="src" type="file" multiple accept=".txt,.md,.csv,.json" onChange={addSources} className="text-sm" />
@@ -154,7 +178,10 @@ export default function Workspace() {
               <input type="checkbox" checked={m.ledgerSigned} onChange={e => update({ ledgerSigned: e.target.checked })} />
               The SME has signed the claims ledger. Until this is checked, audio files are marked DRAFT.
             </label>
-            <button className="btn-primary" onClick={() => setActive('ledger')}>Continue to the claims ledger</button>
+            <div className="flex gap-3">
+              <button className="btn-primary" onClick={continueToLedger}>Continue to the claims ledger</button>
+              <button className="btn" onClick={loadExample}>Fill with an example</button>
+            </div>
           </div>
         )}
 
