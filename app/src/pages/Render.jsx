@@ -124,11 +124,22 @@ export default function Render() {
         items.push({ buffer: null, samples: await blobToSamples(b) });
       }
       const pieces = [];
-      items.forEach((it, i) => { if (i) pieces.push(new Float32Array(Math.round(settings.gapBetweenParts * 44100))); pieces.push(it.samples); });
+      const cues = [];
+      const noCaps = [];
+      let at = 0;   // seconds into the listen where the next part starts
+      items.forEach((it, i) => {
+        if (i) { pieces.push(new Float32Array(Math.round(settings.gapBetweenParts * 44100))); at += settings.gapBetweenParts; }
+        pieces.push(it.samples);
+        const pc = m.timings?.[listen.parts[i]]?.cues;
+        if (pc?.length) cues.push(...pc.map(c => ({ ...c, start: c.start + at, end: c.end + at }))); else noCaps.push(listen.parts[i]);
+        at += it.samples.length / 44100;
+      });
       const total = pieces.reduce((k, p) => k + p.length, 0);
       const outArr = new Float32Array(total);
       let off = 0; for (const p of pieces) { outArr.set(p, off); off += p.length; }
       download(`${prefix}${m.name} - ${listen.name}.wav`, wavBlob(outArr));
+      if (cues.length) setTimeout(() => download(`${prefix}${m.name} - ${listen.name}.vtt`, toVtt(cues), 'text/vtt'), 300);
+      setWarnings(noCaps.length ? [`No captions for ${noCaps.join(', ')} in "${listen.name}". Render ${noCaps.length > 1 ? 'them' : 'it'} again to add ${noCaps.length > 1 ? 'them' : 'it'}.`] : []);
     } catch (e) { setError(e.message); }
   }
 
@@ -163,7 +174,7 @@ export default function Render() {
       {error && <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
       {warnings.length > 0 && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
-          <p className="font-medium">The prototype package has gaps:</p>
+          <p className="font-medium">Heads up:</p>
           <ul className="list-disc pl-5">{warnings.map(w => <li key={w}>{w}</li>)}</ul>
         </div>
       )}
