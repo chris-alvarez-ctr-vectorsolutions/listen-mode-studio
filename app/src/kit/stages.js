@@ -14,7 +14,7 @@ Stop when done.`,
     id: 'plan', n: 3, title: 'Episode plan', kind: 'doc',
     gate: 'You approve the plan.',
     prompt: `Using the production guide and the module files above, plan the episode for {module}.
-1. List the topic parts in order, one per objective, each with: objective, KFD subscale, part type (Everyone or Skippable), and versions (Normal, Harder, Add-on). Where versions aren't specified, propose them with a one-line reason.
+1. List the topic parts in order, one per objective, each with: a topic key (k1, k2... for Know topics, f1, f2... for Feel topics, d1, d2... for Do topics, numbered in order within each type), objective, KFD subscale, part type (Everyone or Skippable), and versions (Normal, Harder, Add-on). Where versions aren't specified, propose them with a one-line reason.
 2. Name the positions that play in every listen, and what the open may promise.
 3. Build the assembly table: each distinct listen, its parts in order, and estimated runtime, ordered from fewest parts to most.
 4. Describe the master script (the longest path).
@@ -59,6 +59,7 @@ Return ONLY a JSON object, with no prose before or after it, in exactly this sha
  "assembly":[{"name":"Master","parts":["00-open","01-k1-normal"]}]}
 Rules:
 - Every asset is a part, in master-script order, then Harder versions.
+- Part IDs are lowercase and follow one pattern, because the audio and the listen prototype read them: "NN-topic" or "NN-topic-variant", where NN is the topic's position in the listen (00 for the open, then 01, 02... in order; the close takes the last number). The open is "00-open" and the close is, for example, "06-close". "topic" is the plan's topic key (k1, f2, d1). "variant" is normal, harder or addon, and is left off only when a topic has a single version (for example "03-f2"). Every version of a topic uses the same NN and topic, so "02-k2-normal" and "02-k2-harder" share a position. Use the IDs from the script headings when they already follow this pattern, and fix them when they don't.
 - "claims" on each part lists every ledger claim ID its lines rest on, taken from the trace table (empty for the open and close if they carry none). Add-ons list their own.
 - Speaker names in capitals, exactly as in the script.
 - Delivery tags only from each voice's palette, two to four per part, where the meaning or emotion shifts. CAPS on one or two words per part. Spell numbers and initialisms as spoken.
