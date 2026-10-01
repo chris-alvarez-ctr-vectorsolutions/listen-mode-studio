@@ -122,6 +122,8 @@ export default function Workspace() {
     }
     return update({ stages: { ...cur().stages, [stage.id]: { ...st(stage.id), status: 'approved' } } });
   };
+  const nextOf = stage => { const i = stages.findIndex(s => s.id === stage.id); return stages[i + 1]; };
+  const runNext = stage => { const nx = nextOf(stage); if (!nx) return; setActive(nx.id); if (!st(nx.id).output) run(nx); };
   const skip = stage => update({ stages: { ...cur().stages, [stage.id]: { status: 'skipped', output: '' } } });
 
   function revise(stage) {
@@ -470,6 +472,7 @@ Don't invent objectives. Reply with the JSON array only.`;
                   <button className="btn" disabled={!!busy || st('editor').status === 'approved'} onClick={() => approve(stage)}>Continue without changes</button>
                 </div>
                 {st('editor').status === 'approved' && !busy && <p className="text-sm text-muted">Done. <button className="underline" onClick={() => setActive('validity')}>See the corrected script in the Validity pass</button>.</p>}
+                {st('editor').status === 'approved' && !busy && nextOf(stage) && <button className="btn-primary" onClick={() => runNext(stage)}>{st(nextOf(stage).id).output ? `Go to ${nextOf(stage).title}` : `Run ${nextOf(stage).title}`} →</button>}
               </div>
             )}
 
@@ -481,9 +484,13 @@ Don't invent objectives. Reply with the JSON array only.`;
                   <button className="btn" disabled={(!feedback.trim() && !m.notes.length && !claimNoteCount && !sectionNoteCount) || !!busy} onClick={() => revise(stage)}>
                     Revise{m.notes.length ? ` with ${m.notes.length} line note${m.notes.length > 1 ? 's' : ''}` : sectionNoteCount ? ` with ${sectionNoteCount} section note${sectionNoteCount > 1 ? 's' : ''}` : claimNoteCount ? ` with ${claimNoteCount} claim note${claimNoteCount > 1 ? 's' : ''}` : ''}
                   </button>
-                  <button className="btn-primary" disabled={!!busy || st(stage.id).status === 'approved'} onClick={() => approve(stage)}>
-                    {st(stage.id).status === 'approved' ? 'Approved' : 'Approve and continue'}
-                  </button>
+                  {st(stage.id).status === 'approved' && nextOf(stage)
+                    ? <button className="btn-primary" disabled={!!busy} onClick={() => runNext(stage)}>
+                        {st(nextOf(stage).id).output ? `Go to ${nextOf(stage).title}` : `Run ${nextOf(stage).title}`} →
+                      </button>
+                    : <button className="btn-primary" disabled={!!busy || st(stage.id).status === 'approved'} onClick={() => approve(stage)}>
+                        {st(stage.id).status === 'approved' ? 'Approved' : 'Approve and continue'}
+                      </button>}
                 </div>
               </div>
             )}
