@@ -13,6 +13,23 @@ export const MIN_CHAPTERS = 3;   // below this a listen is not worth it; the LMS
 
 export const blankObjective = () => ({ id: '', objective: '', type: 'Know', subscale: 'Remember', policy: 'Gate', lock: 'open', audio: true });
 
+// One objective from untrusted text (a model reply, a pasted table) -> a valid table row.
+export function normalizeObjective(o) {
+  const find = (list, v) => list.find(x => x.toLowerCase() === String(v || '').trim().toLowerCase());
+  const type = find(Object.keys(SUBSCALES), o.type) || 'Know';
+  const lock = String(o.lock || '').trim().toLowerCase();
+  return {
+    ...blankObjective(),
+    id: String(o.id || '').trim(),
+    objective: String(o.objective || '').trim(),
+    type,
+    subscale: find(SUBSCALES[type], o.subscale) || SUBSCALES[type][0],
+    policy: find(POLICIES, o.policy) || (type === 'Feel' ? 'Remediate' : 'Gate'),
+    lock: type === 'Know' && (lock === 'locked' || lock === 'fallback') ? lock : 'open',
+    audio: type !== 'Do',
+  };
+}
+
 export const topicKey = id => String(id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const pad = n => String(n).padStart(2, '0');
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');

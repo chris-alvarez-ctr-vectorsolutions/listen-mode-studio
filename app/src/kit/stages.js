@@ -40,7 +40,7 @@ After the scripts, add a trace table mapping every claim-bearing line to its led
   },
   {
     id: 'validity', n: 6, title: 'Validity pass', kind: 'script',
-    gate: 'New facts go to the SME. Everything else is fixed here.',
+    gate: 'Click each line to add editor notes.',
     prompt: `Run every check in the lint checklist against the latest script in this conversation.
 First, report each check as pass or fail. For each failure, quote the line and give the fix. List any new facts separately under "For the SME", with the line each came from.
 Then output the full corrected script in the same format as the draft (## headings per asset, "NAME: text" lines, cue lines in ⟨ ⟩), applying every fix that doesn't need a new fact.`,

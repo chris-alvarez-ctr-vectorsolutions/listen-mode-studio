@@ -67,7 +67,7 @@ Open the **Parts and listens this produces** line under the table and confirm:
 - Listens: Full; K1 tested out; K2 tested up; F1 reinforced.
 - No warning about too few chapters (three audio objectives is the minimum).
 
-Leave the SME box unchecked.
+Tip: the Template tab on the seed page takes a prompt and a pasted document, so you can also fill all of the above in one go. Leave the SME sign-off (on the Claims ledger stage) unchecked.
 
 ## 2. Run the stages
 

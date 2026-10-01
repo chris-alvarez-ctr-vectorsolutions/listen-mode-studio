@@ -5,7 +5,8 @@ import { addRuleToKit, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
 import { EXAMPLE_FIELDS, EXAMPLE_OBJECTIVES, SEED_FIELDS, composeSeed, missingRequired, seedFieldsOf } from '../lib/seed.js';
 import { parsePerformance } from '../lib/script.js';
-import { SUBSCALES, POLICIES, blankObjective, inAudio, pathwayBlock, planParts } from '../lib/pathways.js';
+import { inAudio, normalizeObjective, pathwayBlock, planParts } from '../lib/pathways.js';
+import { parseSeedTemplate, templatePrompt } from '../lib/seedTemplate.js';
 import { dropLedgerRow, editLedgerRow, parseLedger, parseLedgerRows } from '../lib/claims.js';
 import { readFileText } from '../lib/download.js';
 import Markdown from '../components/Markdown.jsx';
@@ -35,6 +36,10 @@ export default function Workspace() {
   const [fixes, setFixes] = useState('');
   const [suggestingId, setSuggestingId] = useState(null);
   const [readingObjectives, setReadingObjectives] = useState(false);
+  const [seedTab, setSeedTab] = useState('guided');
+  const [pasted, setPasted] = useState('');
+  const [importMsg, setImportMsg] = useState('');
+  const [copied, setCopied] = useState(false);
   const abort = useRef(null);
   const mRef = useRef(null);
   const setBoth = next => { mRef.current = next; setM(next); };
@@ -191,6 +196,26 @@ export default function Workspace() {
     finally { setSuggestingId(null); }
   }
 
+  async function copyPrompt() {
+    try { await navigator.clipboard.writeText(templatePrompt()); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+    catch { setImportMsg('Could not copy automatically. Open "Show the prompt" and copy it by hand.'); }
+  }
+  function importTemplate() {
+    const r = parseSeedTemplate(pasted);
+    if (!r.found.length) { setImportMsg(r.notes.join(' ')); return; }
+    const hasText = Object.values(seedFieldsOf(cur())).some(v => v && v.trim()) || (cur().objectives || []).length;
+    if (hasText && !confirm('Replace what is in the seed fields and the pathway table with this document?')) return;
+    const seedFields = { ...seedFieldsOf(cur()), ...r.fields };
+    update({ seedFields, seed: composeSeed(seedFields), ...(r.objectives.length ? { objectives: r.objectives } : {}) });
+    setImportMsg([
+      `Imported ${r.found.length} section${r.found.length > 1 ? 's' : ''}${r.objectives.length ? `, including ${r.objectives.length} objective${r.objectives.length > 1 ? 's' : ''} in the pathway table` : ''}.`,
+      r.missing.length ? `Still empty: ${r.missing.join(', ')}.` : '',
+      ...r.notes,
+      'Check them in the Guided tab.',
+    ].filter(Boolean).join(' '));
+    setPasted('');
+  }
+
   async function suggestObjectives() {
     const c = cur();
     if ((c.objectives || []).length && !confirm('Replace the objectives in the table with the ones read from the seed and source files?')) return;
@@ -210,20 +235,31 @@ Don't invent objectives. Reply with the JSON array only.`;
         messages: [{ role: 'user', content: `${c.seed || ''}\n\n${sources}\n\n---\n\n${ask}` }],
       });
       const list = JSON.parse(reply.slice(reply.indexOf('['), reply.lastIndexOf(']') + 1));
-      const objectives = list.map(o => {
-        const type = SUBSCALES[o.type] ? o.type : 'Know';
-        return {
-          ...blankObjective(),
-          id: String(o.id || '').trim(), objective: o.objective || '', type,
-          subscale: SUBSCALES[type].includes(o.subscale) ? o.subscale : SUBSCALES[type][0],
-          policy: POLICIES.includes(o.policy) ? o.policy : type === 'Feel' ? 'Remediate' : 'Gate',
-          lock: type === 'Know' && ['locked', 'fallback'].includes(o.lock) ? o.lock : 'open',
-          audio: type !== 'Do',
-        };
-      });
+      const objectives = list.map(normalizeObjective);
       await update({ objectives });
     } catch (e) { setError(`Couldn't read objectives: ${e.message}. Add them by hand, or try again.`); }
     finally { setReadingObjectives(false); }
+  }
+
+  // Chapter titles: edit the heading in the stage's reply, the conversation copy later stages read, and any notes on it.
+  function renameHeading(stageId, oldText, newText) {
+    const c = cur();
+    const s = c.stages[stageId];
+    if (!s?.output || !newText.trim() || newText === oldText) return;
+    const lines = s.output.split('\n');
+    const i = lines.findIndex(l => l.match(/^#{1,3}\s+(.+)/)?.[1].trim() === oldText);
+    if (i < 0) return;
+    lines[i] = lines[i].replace(/^(#{1,3}\s+).*/, `$1${newText.trim()}`);
+    const output = lines.join('\n');
+    const thread = [...c.thread];
+    const ti = (s.threadStart ?? -2) + 1;
+    if (thread[ti]?.role === 'assistant') thread[ti] = { ...thread[ti], content: output };
+    return update({
+      thread,
+      stages: { ...c.stages, [stageId]: { ...s, output } },
+      ...(c.currentScript === s.output ? { currentScript: output } : {}),
+      notes: c.notes.map(n => (n.asset === oldText ? { ...n, asset: newText.trim() } : n)),
+    });
   }
 
   async function applyFixes(text) {
@@ -291,6 +327,39 @@ Don't invent objectives. Reply with the JSON array only.`;
               <h2 className="text-lg font-semibold">Seed the module</h2>
               <p className="text-sm text-muted">Fill in what you know. Content claims matter most: the script can only say what is listed there or in an attached source file.</p>
             </div>
+            <div role="tablist" className="flex gap-1 border-b border-rule">
+              {[['guided', 'Guided'], ['template', 'Template']].map(([k, label]) => (
+                <button key={k} role="tab" aria-selected={seedTab === k} onClick={() => setSeedTab(k)}
+                  className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${seedTab === k ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'}`}>{label}</button>
+              ))}
+            </div>
+
+            {seedTab === 'template' && (
+              <div className="space-y-5">
+                <p className="text-sm text-muted">Skip the form. Give an AI tool this prompt along with your source files, and it writes one document with every seed section. Paste that document here and the form fills itself in.</p>
+                <div className="space-y-2">
+                  <div className="label">1. Copy the prompt</div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button className="btn-primary" onClick={copyPrompt}>{copied ? 'Copied' : 'Copy the prompt'}</button>
+                    <span className="text-xs text-muted">Paste it into your AI tool and attach your source files (course script, deck, SOPs).</span>
+                  </div>
+                  <details className="text-sm">
+                    <summary className="cursor-pointer">Show the prompt</summary>
+                    <textarea readOnly aria-label="Seed prompt" className="field mt-2 h-64 font-mono text-xs" value={templatePrompt()} onFocus={e => e.target.select()} />
+                  </details>
+                </div>
+                <div className="space-y-2">
+                  <label className="label" htmlFor="pasted">2. Paste what it writes</label>
+                  <textarea id="pasted" className="field h-56 font-mono text-xs" placeholder={'## Audience and sector\n...\n\n## Pathway table\nK1 | ... | Know | Remember | Gate | open'} value={pasted} onChange={e => setPasted(e.target.value)} />
+                  <div className="flex items-center gap-3">
+                    <button className="btn-primary" disabled={!pasted.trim()} onClick={importTemplate}>Fill in the seed</button>
+                    {importMsg && <span role="status" className="text-sm text-muted">{importMsg}</span>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {seedTab === 'guided' && <>
             {SEED_FIELDS.map(f => (
               <div key={f.id}>
                 <label className="label" htmlFor={`seed-${f.id}`}>{f.label}{f.required && <span className="text-onair"> *</span>}</label>
@@ -302,6 +371,7 @@ Don't invent objectives. Reply with the JSON array only.`;
             ))}
             <PathwayEditor objectives={m.objectives || []} suggesting={readingObjectives}
               onChange={objectives => update({ objectives })} onSuggest={suggestObjectives} />
+            </>}
             <div>
               <label className="label" htmlFor="src">Source files (text, Markdown or PDF)</label>
               <input id="src" type="file" multiple accept=".txt,.md,.csv,.json,.pdf" onChange={addSources} className="text-sm" />
@@ -312,11 +382,6 @@ Don't invent objectives. Reply with the JSON array only.`;
                 ))}
               </ul>
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={m.ledgerSigned} disabled={pendingClaims > 0} onChange={e => update({ ledgerSigned: e.target.checked })} />
-              The SME has signed the claims ledger. Until this is checked, audio files are marked DRAFT.
-              {pendingClaims > 0 && <span className="text-amber-900"> {pendingClaims} claim{pendingClaims > 1 ? 's are' : ' is'} waiting on the SME.</span>}
-            </label>
             <div className="flex gap-3">
               <button className="btn-primary" onClick={continueToLedger}>Continue to the claims ledger</button>
               <button className="btn" onClick={loadExample}>Fill with an example</button>
@@ -357,7 +422,7 @@ Don't invent objectives. Reply with the JSON array only.`;
                 return (
                   <div className="space-y-6">
                     {report && <SectionReview text={report} state={itemState[stage.id]} disabled={!!busy} onChange={(k, v) => setItem(stage.id, k, v)} />}
-                    <ScriptReview text={script} notes={m.notes}
+                    <ScriptReview text={script} notes={m.notes} disabled={!!busy} onRenameHeading={(o, n) => renameHeading(stage.id, o, n)}
                       onAddNote={n => update({ notes: [...m.notes, n] })}
                       onRemoveNote={key => update({ notes: m.notes.filter(n => n.key !== key) })}
                       onSaveRule={saveRule} />
@@ -379,6 +444,14 @@ Don't invent objectives. Reply with the JSON array only.`;
               {busy !== stage.id && out && stage.id === 'ledger' && ledgerRows.length > 0 && (
                 <LedgerReview rows={ledgerRows} meta={claimMeta} suggestingId={suggestingId} disabled={!!busy || !!suggestingId}
                   onAction={decide} onSuggest={suggestFix} onNote={noteClaim} />
+              )}
+              {busy !== stage.id && out && stage.id === 'ledger' && (
+                <label className="mt-6 flex items-start gap-2 rounded-md border border-rule bg-paper p-3 text-sm">
+                  <input type="checkbox" className="mt-1" checked={m.ledgerSigned} disabled={pendingClaims > 0} onChange={e => update({ ledgerSigned: e.target.checked })} />
+                  <span>The SME has signed this claims ledger. Until this is checked, audio files are marked DRAFT.
+                    {pendingClaims > 0 && <span className="text-amber-900"> {pendingClaims} claim{pendingClaims > 1 ? 's are' : ' is'} waiting on the SME.</span>}
+                    {m.ledgerSigned && <span className="text-muted"> Editing the ledger after signing means it needs signing again.</span>}</span>
+                </label>
               )}
               {busy !== stage.id && out && stage.kind === 'editor' && (
                 <FixReview text={out} state={itemState.editor} disabled={!!busy} onChange={(n, v) => setItem('editor', n, v)} />
