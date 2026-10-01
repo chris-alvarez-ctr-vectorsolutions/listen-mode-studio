@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS = {
   gapBetweenParts: 1.5,    // seconds of silence standing in for a sting
   themeMusic: true,        // mix theme music into the open and the close
   introTailSec: 5,         // how long the intro music keeps playing after the dialogue ends
-  outroTailSec: 5,         // the same for the outro
+  outroTailSec: 3.5,        // the same for the outro
   musicLevel: 0.7,         // theme music level under and after the dialogue (0 to 1)
   voices: [
     { speaker: 'DANA', voiceId: '' },
