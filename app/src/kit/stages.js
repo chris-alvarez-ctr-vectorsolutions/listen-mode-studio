@@ -4,7 +4,7 @@ export const DEFAULT_STAGES = [
   {
     id: 'ledger', n: 2, title: 'Claims ledger', kind: 'doc', skippable: true,
     gate: 'An SME signs the ledger before anything is rendered for real.',
-    prompt: `From the attached source content for {module}, build a claims ledger as a table:
+    prompt: `From the source content for {module} (the seed text and any attached source files), build a claims ledger as a table:
 ID (C01, C02...) | the claim in one plain sentence | source (learning objective and slide or reference) | flag.
 Flag any claim with a scope limit, a conflict with another claim, or a claim the source content doesn't support.
 Don't merge, generalize or add claims. Then list any claim from other attached material (prior scripts, decks) that the source content doesn't support, marked FLAG.

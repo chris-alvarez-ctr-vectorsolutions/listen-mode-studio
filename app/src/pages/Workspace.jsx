@@ -52,13 +52,16 @@ export default function Workspace() {
         await update({ stages: { ...cur().stages, editor: { status: 'ready', output: reply } } });
         return;
       }
-      const first = mod.thread.length === 0;
-      const content = first ? `${seedBlock(mod)}\n\n---\n\n${prompt}` : prompt;
-      const thread = [...mod.thread, { role: 'user', content }];
+      // "Run again" replaces the stage's earlier exchange (and rebuilds the seed if it is the first one);
+      // a revision (userText) continues the conversation.
+      const start = userText ? mod.thread.length : (st(stage.id).threadStart ?? mod.thread.length);
+      const base = mod.thread.slice(0, start);
+      const content = base.length === 0 ? `${seedBlock(mod)}\n\n---\n\n${prompt}` : prompt;
+      const thread = [...base, { role: 'user', content }];
       reply = await callClaude({ system, messages: thread, onText: setLive, signal: abort.current.signal });
       const patch = {
         thread: [...thread, { role: 'assistant', content: reply }],
-        stages: { ...cur().stages, [stage.id]: { status: 'ready', output: reply } },
+        stages: { ...cur().stages, [stage.id]: { status: 'ready', output: reply, threadStart: start } },
       };
       if (stage.kind === 'script') patch.currentScript = reply;
       if (stage.kind === 'json') {
