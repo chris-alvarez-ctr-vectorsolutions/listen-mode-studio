@@ -7,6 +7,7 @@ import { dialogue } from '../lib/eleven.js';
 import { blobToSamples, decode, join, wavBlob } from '../lib/audio.js';
 import { download, readFileText } from '../lib/download.js';
 import { speakerColor } from '../components/speaker.js';
+import { cuesFromResponse, toVtt } from '../lib/captions.js';
 import { buildManifest, fileNameFor } from '../lib/manifest.js';
 import { buildImpact, parseLedger, snapshot } from '../lib/claims.js';
 
@@ -55,6 +56,7 @@ export default function Render() {
     try {
       const items = [];
       const prior = [];
+      const cues = [];
       const marks = [];   // where each segment starts, in seconds, for the seam and transcript sync
       let t = 0;
       const add = it => { items.push(it); t += it.buffer ? it.buffer.length / it.buffer.sampleRate : it.silence; };
@@ -65,8 +67,9 @@ export default function Render() {
         for (const chunk of chunkLines(seg.lines)) {
           n += 1; say(`Rendering ${n} of ${total}`);
           const inputs = chunk.map(l => ({ text: l.text, voice_id: voiceFor(l.speaker) }));
-          const { audio, requestId } = await dialogue(inputs, { previousRequestIds: prior });
+          const { audio, requestId, timings } = await dialogue(inputs, { previousRequestIds: prior });
           if (requestId) prior.push(requestId);
+          try { cues.push(...cuesFromResponse(inputs, chunk.map(l => l.speaker), timings, t)); } catch { /* captions are optional */ }
           add({ buffer: await decode(audio) });
           add({ silence: settings.gapBetweenLines });
         }
@@ -76,12 +79,12 @@ export default function Render() {
       await saveAudio(m.id, part.id, blob);
       // The ending is the last segment, so an add-on is spliced in where it starts.
       // claims: the text of each cited claim as it reads now, so a later ledger change shows up as stale.
-      const timing = { duration: t, seamAt: marks.length > 1 ? marks[marks.length - 1].start : null, segments: marks, claims: snapshot(part.claims, parseLedger(m.stages?.ledger?.output)) };
+      const timing = { duration: t, cues, seamAt: marks.length > 1 ? marks[marks.length - 1].start : null, segments: marks, claims: snapshot(part.claims, parseLedger(m.stages?.ledger?.output)) };
       const cur = await getModule(m.id);
       await saveModule({ ...cur, timings: { ...cur.timings, [part.id]: timing } });
       setM(prev => ({ ...prev, timings: { ...prev.timings, [part.id]: timing } }));
       setUrls(u => ({ ...u, [part.id]: URL.createObjectURL(blob) }));
-      say('Rendered');
+      say(cues.length ? 'Rendered' : 'Rendered (no captions)');
       return true;
     } catch (e) { say('Failed'); setError(e.message); return false; }
   }
@@ -101,7 +104,11 @@ export default function Render() {
       const { manifest, files, warnings: warn } = buildManifest(mod, settings, rendered);
       const zip = new JSZip();
       zip.file('manifest.json', JSON.stringify(manifest, null, 2));
-      for (const f of files) zip.file(`audio/${f.name}`, await getAudio(mod.id, f.partId));
+      for (const f of files) {
+        zip.file(`audio/${f.name}`, await getAudio(mod.id, f.partId));
+        const cues = mod.timings?.[f.partId]?.cues;
+        if (cues?.length) zip.file(`audio/${f.name.replace(/\.wav$/, '.vtt')}`, toVtt(cues));
+      }
       setWarnings(warn);
       download(`${prefix}${mod.name} prototype package.zip`, await zip.generateAsync({ type: 'blob' }));
     } catch (e) { setError(e.message); }
@@ -130,6 +137,8 @@ export default function Render() {
     for (const p of parts) {
       const b = await getAudio(m.id, p.id);
       if (b) zip.file(fileNameFor(m, p.id), b);
+      const cues = m.timings?.[p.id]?.cues;
+      if (b && cues?.length) zip.file(fileNameFor(m, p.id).replace(/\.wav$/, '.vtt'), toVtt(cues));
     }
     download(`${prefix}${m.name} parts.zip`, await zip.generateAsync({ type: 'blob' }));
   }
@@ -181,6 +190,7 @@ export default function Render() {
                   {urls[p.id] && <audio controls src={urls[p.id]} className="h-9" />}
                   <button className="btn" disabled={missing.length > 0} onClick={() => renderPart(p)}>{urls[p.id] ? 'Render again' : 'Render'}</button>
                   {urls[p.id] && <a className="btn" href={urls[p.id]} download={`${prefix}${p.id}.wav`}>Download</a>}
+                  {m.timings?.[p.id]?.cues?.length > 0 && <button className="btn" onClick={() => download(`${prefix}${p.id}.vtt`, toVtt(m.timings[p.id].cues), 'text/vtt')}>Captions</button>}
                 </div>
               </div>
               {open === p.id && (
