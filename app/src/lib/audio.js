@@ -23,6 +23,24 @@ export function join(items) {
   return out;
 }
 
+// Mix theme music into mono speech, starting at startSec (never before 0). The part grows if the music runs past
+// the dialogue. A soft limiter rounds off any peak that would clip, so the music level stays where it was set.
+export function mixTheme(speech, music, startSec, level = 1) {
+  const m = join([{ buffer: music }]);
+  const start = Math.max(0, Math.round(startSec * RATE));
+  const fadeIn = Math.round(0.02 * RATE), fadeOut = Math.round(0.05 * RATE);
+  const env = i => Math.min(1, (i + 1) / fadeIn, (m.length - i) / fadeOut);
+  const out = new Float32Array(Math.max(speech.length, start + m.length));
+  out.set(speech);
+  const KNEE = 0.9, ROOM = 1 - KNEE - 0.01;
+  for (let i = 0; i < m.length; i++) {
+    const v = out[start + i] + m[i] * env(i) * level;
+    const a = Math.abs(v);
+    out[start + i] = a > KNEE ? Math.sign(v) * (KNEE + ROOM * Math.tanh((a - KNEE) / ROOM)) : v;
+  }
+  return { samples: out, start: start / RATE, end: (start + m.length) / RATE };
+}
+
 export function wavBlob(samples, rate = RATE) {
   const buf = new ArrayBuffer(44 + samples.length * 2);
   const v = new DataView(buf);

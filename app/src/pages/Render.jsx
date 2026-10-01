@@ -4,11 +4,12 @@ import JSZip from 'jszip';
 import { getAudio, getModule, loadSettings, saveAudio, saveModule } from '../lib/store.js';
 import { chunkLines, partFromText, speakersIn } from '../lib/script.js';
 import { dialogue } from '../lib/eleven.js';
-import { blobToSamples, decode, join, wavBlob } from '../lib/audio.js';
+import { blobToSamples, decode, join, mixTheme, wavBlob } from '../lib/audio.js';
+import { THEME_FOR, themeBuffer } from '../lib/theme.js';
 import { download, readFileText } from '../lib/download.js';
 import { speakerColor } from '../components/speaker.js';
 import { combineCues, cuesFromResponse, toVtt } from '../lib/captions.js';
-import { buildManifest, fileNameFor } from '../lib/manifest.js';
+import { buildManifest, classifyPart, fileNameFor } from '../lib/manifest.js';
 import { buildImpact, parseLedger, snapshot } from '../lib/claims.js';
 
 export default function Render() {
@@ -59,7 +60,8 @@ export default function Render() {
       const cues = [];
       const marks = [];   // where each segment starts, in seconds, for the seam and transcript sync
       let t = 0;
-      const add = it => { items.push(it); t += it.buffer ? it.buffer.length / it.buffer.sampleRate : it.silence; };
+      let speechEnd = 0;   // where the last spoken audio ends, before any trailing gap or hold
+      const add = it => { items.push(it); t += it.buffer ? it.buffer.length / it.buffer.sampleRate : it.silence; if (it.buffer) speechEnd = t; };
       let n = 0;
       const total = part.segments.reduce((k, s) => k + chunkLines(s.lines).length, 0);
       for (const seg of part.segments) {
@@ -75,16 +77,28 @@ export default function Render() {
         }
         if (seg.pauseAfter) add({ silence: Number(seg.pauseAfter) });
       }
-      const blob = wavBlob(join(items));
+      let samples = join(items);
+      let duration = t;
+      let theme = null;
+      const which = THEME_FOR[classifyPart(part.id)?.topic];
+      if (settings.themeMusic && which) {
+        say('Adding theme music');
+        const music = await themeBuffer(which);
+        const tail = Number(settings[`${which}TailSec`] ?? 5);
+        const mixed = mixTheme(samples, music, speechEnd + tail - music.duration, Number(settings.musicLevel ?? 0.7));
+        samples = mixed.samples; duration = samples.length / 44100;
+        theme = { kind: which, start: mixed.start, end: mixed.end };
+      }
+      const blob = wavBlob(samples);
       await saveAudio(m.id, part.id, blob);
       // The ending is the last segment, so an add-on is spliced in where it starts.
       // claims: the text of each cited claim as it reads now, so a later ledger change shows up as stale.
-      const timing = { duration: t, cues, seamAt: marks.length > 1 ? marks[marks.length - 1].start : null, segments: marks, claims: snapshot(part.claims, parseLedger(m.stages?.ledger?.output)) };
+      const timing = { duration, theme, cues, seamAt: marks.length > 1 ? marks[marks.length - 1].start : null, segments: marks, claims: snapshot(part.claims, parseLedger(m.stages?.ledger?.output)) };
       const cur = await getModule(m.id);
       await saveModule({ ...cur, timings: { ...cur.timings, [part.id]: timing } });
       setM(prev => ({ ...prev, timings: { ...prev.timings, [part.id]: timing } }));
       setUrls(u => ({ ...u, [part.id]: URL.createObjectURL(blob) }));
-      say(cues.length ? 'Rendered' : 'Rendered (no captions)');
+      say(`${cues.length ? 'Rendered' : 'Rendered (no captions)'}${theme ? ', with theme music' : ''}`);
       return true;
     } catch (e) { say('Failed'); setError(e.message); return false; }
   }

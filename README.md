@@ -51,7 +51,8 @@ The kit (production guide, voice example, pattern library, lint checklist and th
 ## Known limits in 0.1
 
 - Regenerating happens per part, not per line. Fine delivery fixes still happen in ElevenLabs Studio.
-- Stings and beds are silence placeholders (`Gap between parts` in Settings). No sound effects are generated yet.
+- Theme music is mixed into the open and the close when they render (Settings, Theme music). It starts under the end of the dialogue and keeps playing for the set number of seconds after it ends. A built-in pair ships with the app; Settings can replace either file. Stings between parts are still silence placeholders, and no sound effects are generated yet.
+- Stings and beds elsewhere are silence placeholders (`Gap between parts` in Settings). No sound effects are generated yet.
 - The kit and modules live in one browser. Sharing is by export and import. A shared kit could move to Cloudflare KV behind the same worker.
 - Long stages can hit the output token limit. The app says so when it happens; raise it in Settings and run the stage again.
 - Audio downloads are WAV. Convert to MP3 later if file size matters.

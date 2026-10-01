@@ -13,6 +13,10 @@ export const DEFAULT_SETTINGS = {
   outputFormat: 'mp3_44100_128',
   gapBetweenLines: 0.25,   // seconds, only between request chunks
   gapBetweenParts: 1.5,    // seconds of silence standing in for a sting
+  themeMusic: true,        // mix theme music into the open and the close
+  introTailSec: 5,         // how long the intro music keeps playing after the dialogue ends
+  outroTailSec: 5,         // the same for the outro
+  musicLevel: 0.7,         // theme music level under and after the dialogue (0 to 1)
   voices: [
     { speaker: 'DANA', voiceId: '' },
     { speaker: 'RAY', voiceId: '' },
@@ -43,6 +47,7 @@ export async function deleteModule(id) {
 }
 export const getAudio = (mid, pid) => get(AUDIO(mid, pid));
 export const saveAudio = (mid, pid, blob) => set(AUDIO(mid, pid), blob);
+export const deleteAudio = (mid, pid) => del(AUDIO(mid, pid));
 
 export function newModule(name) {
   return {

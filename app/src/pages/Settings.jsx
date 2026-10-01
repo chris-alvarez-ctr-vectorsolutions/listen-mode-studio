@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from '../lib/store.js';
 import { listModels, listVoices } from '../lib/eleven.js';
+import { clearTheme, hasCustomTheme, saveTheme, themeBlob } from '../lib/theme.js';
 
 export default function Settings() {
   const [s, setS] = useState(loadSettings);
@@ -19,6 +20,22 @@ export default function Settings() {
     setMsg(failed.length
       ? `${failed.join(' ')} If your ElevenLabs key can't list voices or models, that's fine: type the model and paste voice IDs below.`
       : 'Loaded your voices and models.');
+  }
+
+  const [custom, setCustom] = useState({});
+  const preview = useRef(null);
+  const refreshCustom = async () => setCustom({ intro: await hasCustomTheme('intro'), outro: await hasCustomTheme('outro') });
+  useEffect(() => { refreshCustom(); }, []);
+  async function pickTheme(which, e) {
+    const f = e.target.files?.[0];
+    if (f) { await saveTheme(which, f); await refreshCustom(); setMsg(`Replaced the ${which} music. Render the ${which === 'intro' ? 'open' : 'close'} again to use it.`); }
+    e.target.value = '';
+  }
+  async function playTheme(which) {
+    preview.current?.pause();
+    preview.current = new Audio(URL.createObjectURL(await themeBlob(which)));
+    preview.current.volume = Math.max(0, Math.min(1, Number(s.musicLevel) || 0));
+    preview.current.play();
   }
 
   return (
@@ -81,6 +98,29 @@ export default function Settings() {
           <div><label className="label" htmlFor="g2">Gap between parts in a listen (s)</label>
             <input id="g2" type="number" step="0.1" className="field" value={s.gapBetweenParts} onChange={e => set('gapBetweenParts', Number(e.target.value))} /></div>
         </div>
+      </section>
+
+      <section className="space-y-4 rounded-lg border border-rule bg-panel p-5">
+        <h2 className="font-semibold">Theme music</h2>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={s.themeMusic} onChange={e => set('themeMusic', e.target.checked)} />Mix theme music into the open and the close when they are rendered</label>
+        <p className="text-xs text-muted">The music starts under the end of the dialogue and keeps playing after it ends, so it finishes the set number of seconds later. Render the open and close again after changing these.</p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div><label className="label" htmlFor="t1">Intro music after dialogue (s)</label>
+            <input id="t1" type="number" step="0.5" min="0" className="field" value={s.introTailSec} onChange={e => set('introTailSec', Number(e.target.value))} /></div>
+          <div><label className="label" htmlFor="t2">Outro music after dialogue (s)</label>
+            <input id="t2" type="number" step="0.5" min="0" className="field" value={s.outroTailSec} onChange={e => set('outroTailSec', Number(e.target.value))} /></div>
+          <div><label className="label" htmlFor="t3">Music level (0 to 1)</label>
+            <input id="t3" type="number" step="0.05" min="0" max="1" className="field" value={s.musicLevel} onChange={e => set('musicLevel', Number(e.target.value))} /></div>
+        </div>
+        {['intro', 'outro'].map(w => (
+          <div key={w} className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="w-28 font-medium capitalize">{w} music</span>
+            <span className="text-muted">{custom[w] ? 'Your file' : 'Built-in'}</span>
+            <button className="btn" onClick={() => playTheme(w)}>Play</button>
+            <label className="btn cursor-pointer">Replace<input type="file" accept="audio/*" className="sr-only" onChange={e => pickTheme(w, e)} /></label>
+            {custom[w] && <button className="btn" onClick={async () => { await clearTheme(w); refreshCustom(); }}>Use built-in</button>}
+          </div>
+        ))}
       </section>
 
       <div className="flex items-center gap-3">
