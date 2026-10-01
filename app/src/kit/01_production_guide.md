@@ -33,29 +33,33 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 - Appear only in their own part. Never mentioned in the open or another part.
 - They never explain the lesson. The host carries any facts around them.
 
-## 3. Part types
+## 3. Part types and pathways
 
 | Label | What it is | How it plays |
 | --- | --- | --- |
-| Everyone (Universal) | A topic every learner hears | Always in the listen |
-| Skippable (Test-out) | A topic a learner can test out of | Cut when the quiz shows they know it |
-| Normal (Base) | The default version of a topic | Plays unless swapped |
-| Harder (Test-up) | A harder scene with the same facts | **Replaces** Normal for learners who know it but can't skip it |
-| Add-on (Reinforced) | Extra story | **Inserted** into Normal, just before that part's ending, for learners who aren't convinced yet |
-| Review set (Remedial) | A few fact cards and a retry question | Shown on screen after the checks for a missed Know question. Not audio, and never part of the listen. |
+| Base | The default version of a topic | Plays unless swapped or removed |
+| Test-up | A harder scene with the same facts | **Replaces** Base for learners who prove the basics in the pre-check. Compliance-locked Know topics test up instead of out. |
+| Reinforced | A fuller version of a Feel topic, with the same facts and more weight | **Replaces** Base for learners who score 3 or lower on the 1 to 5 agreement item in the pre-check (4 and 5 are high) |
+| Single version | A topic with one version, such as a Feel/Value topic that is only asked about once per course | Always plays |
 
-**The master script** is the longest path: every topic with every add-on inserted. Every other listen is the master with parts removed or swapped.
+Routing is per objective, from the pre-check:
+- **Know, not locked:** a correct pre-check answer tests the learner out. The topic is removed from their listen.
+- **Know, compliance-locked:** never tests out. A correct pre-check answer plays the Test-up instead of the Base.
+- **Feel:** never removes content. A low score plays the Reinforced version instead of the Base.
+- **Do:** not in the audio. The simulation runs for every learner.
+
+The pathway table in each module fixes which versions exist, so don't add, drop or rename any. Remedial content and review cards are not audio: a separate interactive step delivers them after the checks, so never write them.
+
+**The master script** is the Full listen: every topic's Base (or single) version in order. Every other listen is the master with a part removed or swapped. A listen with fewer than three chapters isn't built; the learner goes to the article instead.
 
 ## 4. Modular rules
 
 1. Every part stands alone. No references to other parts: no "again," "this time," "like we said."
 2. Topic order is fixed. Each position always covers the same subject.
-3. The open may only promise content from positions that play in every listen. It never promises a skippable topic.
+3. The open may only promise content from positions that play in every listen. It never promises a topic that can test out.
 4. No bridges. Each part's first exchange names its topic in plain words, so it works whatever played before it.
-5. Harder versions stand alone. The learner never heard Normal.
-6. Add-ons sit just before the part's ending line and pick up mid-story without re-introducing anyone.
-7. Each part's ending is its own segment, so an add-on can slot in front of it.
-8. Review sets stand alone. Each card rests on a ledger claim and never refers to the listen, the hosts or a character.
+5. Test-up and Reinforced versions stand alone. The learner never heard the Base, and the listen has no memory of it.
+6. Each part's ending is its own segment.
 
 ## 5. Fact rules (these override everything else)
 
@@ -112,10 +116,8 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 | Asset | Words | About |
 | --- | --- | --- |
 | Open | 25 to 60 | 10 to 25 seconds |
-| Topic part, Normal or Harder | 200 to 280 | 1:30 to 2:00 |
-| Add-on | 40 to 100 | 20 to 45 seconds |
+| Topic part (Base, Test-up, Reinforced or single) | 200 to 280 | 1:30 to 2:00 |
 | Close | 20 to 50 | 10 to 20 seconds |
-| Review set (per Know topic) | 3 to 5 cards, each 1 to 2 sentences on the back | read on screen |
 
 Runtime = words / 140, plus holds, plus about 3 seconds per sting.
 
@@ -131,7 +133,7 @@ Runtime = words / 140, plus holds, plus about 3 seconds per sting.
 - Emphasis: CAPS on one or two words per part. No SSML.
 - Short pauses: an ellipsis or [pause]. Anything 2 seconds or longer is a hold on the cue sheet.
 - Spell out as spoken: numbers ("more than nine out of ten"), initialisms (H-I-V, P-P-E, U-S).
-- Split each part into render segments at every hold, add-on seam and ending.
+- Split each part into render segments at every hold and at the ending.
 
 ## 10. Editing in ElevenLabs Studio
 

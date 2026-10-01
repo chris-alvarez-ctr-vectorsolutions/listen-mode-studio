@@ -1,8 +1,10 @@
 import { buildImpact } from './claims.js';
 import { combineCues, toVtt } from './captions.js';
+import { FEEL_LOW_MAX, MIN_CHAPTERS, inAudio, planParts, routeOf, topicKey, versionsFor } from './pathways.js';
 
 // Turns a module's rendered parts and recorded timings into the manifest the listen prototype plays from.
-const VARIANTS = ['normal', 'harder', 'addon'];
+const VARIANTS = ['base', 'testup', 'reinforced'];
+const LEGACY = ['normal', 'harder', 'addon'];   // names from before the pathway rules
 
 // Part id -> { kind: 'part', pos, topic, variant } | { kind: 'quickTake', topic } | null.
 // Tolerates a DRAFT- prefix and export-index prefixes like "01_01-k1-normal".
@@ -15,8 +17,8 @@ export function classifyPart(rawId) {
   if (pos === null) return null;
   const words = id.toLowerCase().split(/[-_]/);
   const last = words[words.length - 1];
-  const explicit = words.length > 1 && VARIANTS.includes(last);
-  const variant = explicit ? last : 'normal';
+  const explicit = words.length > 1 && [...VARIANTS, ...LEGACY].includes(last);
+  const variant = explicit ? last : 'universal';
   const topic = (explicit ? words.slice(0, -1) : words).join('-');
   return { kind: 'part', pos, topic, variant };
 }
@@ -29,17 +31,15 @@ export function buildManifest(m, settings, rendered) {
   const timings = m.timings || {};
   const warnings = [];
   const topics = {};
-  const quickTakes = {};
-  const normalIds = {};
   const files = [];
   const captions = [];   // [{ path, vtt }] written into the package next to the audio
   const impact = buildImpact(m);
   for (const p of impact.partRows) if (p.stale.length) warnings.push(`"${p.id}" was rendered before ${p.stale.join(', ')} changed. Render it again.`);
-  for (const s of impact.setRows) if (s.stale.length) warnings.push(`Review cards for "${s.topic}" were written before ${s.stale.join(', ')} changed. Run the Review cards stage again.`);
 
   for (const p of parts) {
     const c = classifyPart(p.id);
-    if (!c) { warnings.push(`"${p.id}" doesn't look like a topic part or a quick take, so it was left out.`); continue; }
+    if (!c) { warnings.push(`"${p.id}" doesn't look like a topic part, so it was left out.`); continue; }
+    if (c.kind === 'quickTake') { warnings.push(`"${p.id}" is a quick take. Remedial content isn't part of the audio, so it was left out.`); continue; }
     if (!rendered.has(p.id)) { warnings.push(`"${p.id}" isn't rendered yet.`); continue; }
     const t = timings[p.id];
     if (!t) warnings.push(`"${p.id}" was rendered before timings were recorded. Render it again.`);
@@ -59,26 +59,34 @@ export function buildManifest(m, settings, rendered) {
       captions.push({ path, vtt: toVtt(t.cues) });
       entry.captions = path;
     }
-    if (c.kind === 'quickTake') { quickTakes[c.topic] = entry; continue; }
     const topic = (topics[c.topic] ||= { position: c.pos });
     topic.position = Math.min(topic.position, c.pos);
     topic[c.variant] = entry;
-    if (c.variant === 'normal') normalIds[c.topic] = p.id;
+    if (LEGACY.includes(c.variant)) warnings.push(`"${p.id}" uses an old version name (${c.variant}). Use base, testup or reinforced, and run the Performance pass again.`);
   }
 
-  for (const [name, topic] of Object.entries(topics)) {
-    if (!topic.normal) warnings.push(`Topic "${name}" has no normal version.`);
-    if (topic.addon) {
-      const seam = timings[normalIds[name]]?.seamAt;
-      if (seam == null) warnings.push(`Topic "${name}" has an add-on but no seam time. Render its normal part again, and check that its ending is its own segment.`);
-      topic.seamAt = seam == null ? null : round(seam);
+  // Each audio objective must have exactly the versions the pathway rules call for, and the topic carries its routing.
+  const objectives = (m.objectives || []).filter(inAudio);
+  for (const o of objectives) {
+    const key = topicKey(o.id);
+    const topic = topics[key];
+    const need = versionsFor(o);
+    if (!topic) { warnings.push(`Objective ${o.id} has no rendered parts yet.`); continue; }
+    for (const v of need) if (!topic[v]) warnings.push(`Topic "${key}" has no ${v === 'universal' ? 'rendered' : v} version.`);
+    for (const v of VARIANTS) if (topic[v] && !need.includes(v)) warnings.push(`Topic "${key}" has a ${v} version that its pathway doesn't call for.`);
+    topic.objective = o.id;
+    topic.kfd = `${o.type} / ${o.subscale}`;
+    topic.policy = o.policy;
+    topic.lock = o.type === 'Know' ? o.lock : null;
+    topic.routing = routeOf(o).kind;
+  }
+  for (const name of Object.keys(topics)) {
+    if (name !== 'open' && name !== 'close' && !objectives.some(o => topicKey(o.id) === name)) {
+      warnings.push(`Topic "${name}" isn't an objective in the pathway table.`);
     }
   }
-
-  // Topic keys follow the part-ID convention: k = Know, which needs a review set.
-  for (const name of Object.keys(topics)) {
-    if (name.startsWith('k') && !(m.reviewSets?.sets || []).some(s => s.topic === name)) warnings.push(`Know topic "${name}" has no review set. Run the Review cards stage.`);
-  }
+  const required = planParts(objectives).map(p => p.id);
+  for (const id of required) if (!parts.some(p => p.id === id)) warnings.push(`The pathway table calls for "${id}", but the render data has no such part.`);
 
   const order = Object.keys(topics).sort((a, b) => topics[a].position - topics[b].position);
   const manifest = {
@@ -90,8 +98,7 @@ export function buildManifest(m, settings, rendered) {
     spliceFadeMs: 25,
     order,
     topics,
-    quickTakes,
-    reviewSets: Object.fromEntries((m.reviewSets?.sets || []).map(s => [s.topic, { title: s.title, cards: s.cards, retry: s.retry }])),
+    pathways: { feelLowMax: FEEL_LOW_MAX, minChapters: MIN_CHAPTERS, remedial: 'external' },
     listens: (m.parts?.assembly || []).map(l => {
       const out = { name: l.name, parts: l.parts };
       const ts = l.parts.map(pid => timings[pid]);

@@ -3,13 +3,14 @@ import { Link, useParams } from 'react-router-dom';
 import { getModule, saveModule } from '../lib/store.js';
 import { addRuleToKit, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
-import { EXAMPLE_FIELDS, SEED_FIELDS, composeSeed, missingRequired, seedFieldsOf } from '../lib/seed.js';
-import { parsePerformance, parseReviewSets } from '../lib/script.js';
+import { EXAMPLE_FIELDS, EXAMPLE_OBJECTIVES, SEED_FIELDS, composeSeed, missingRequired, seedFieldsOf } from '../lib/seed.js';
+import { parsePerformance } from '../lib/script.js';
+import { SUBSCALES, POLICIES, blankObjective, inAudio, pathwayBlock, planParts } from '../lib/pathways.js';
 import { dropLedgerRow, editLedgerRow, parseLedger, parseLedgerRows } from '../lib/claims.js';
 import { readFileText } from '../lib/download.js';
 import Markdown from '../components/Markdown.jsx';
 import ScriptReview from '../components/ScriptReview.jsx';
-import ReviewSets from '../components/ReviewSets.jsx';
+import PathwayEditor from '../components/PathwayEditor.jsx';
 import LedgerReview from '../components/LedgerReview.jsx';
 
 function seedBlock(m) {
@@ -28,6 +29,7 @@ export default function Workspace() {
   const [feedback, setFeedback] = useState('');
   const [fixes, setFixes] = useState('');
   const [suggestingId, setSuggestingId] = useState(null);
+  const [readingObjectives, setReadingObjectives] = useState(false);
   const abort = useRef(null);
   const mRef = useRef(null);
   const setBoth = next => { mRef.current = next; setM(next); };
@@ -43,12 +45,13 @@ export default function Workspace() {
   const continueToLedger = () => {
     const miss = missingRequired(seedFieldsOf(cur())).filter(() => !cur().sources.length);
     if (miss.length && !confirm(`Missing: ${miss.join(', ')}. The ledger will likely come back with nothing to work from. Continue anyway?`)) return;
+    if (!(cur().objectives || []).some(inAudio) && !confirm('No objectives are in the pathway table yet, so the episode plan will have nothing to build from. Continue anyway?')) return;
     saveModule(cur()); setActive('ledger');
   };
   const loadExample = () => {
     const hasText = Object.values(seedFieldsOf(cur())).some(v => v && v.trim());
     if (hasText && !confirm('Replace what is in the seed fields with the example?')) return;
-    update({ seedFields: { ...EXAMPLE_FIELDS }, seed: composeSeed(EXAMPLE_FIELDS) });
+    update({ seedFields: { ...EXAMPLE_FIELDS }, seed: composeSeed(EXAMPLE_FIELDS), objectives: EXAMPLE_OBJECTIVES.map(o => ({ ...o })) });
   };
 
   const stages = kit.stages;
@@ -67,7 +70,7 @@ export default function Workspace() {
       const prompt = (userText || stage.prompt).replaceAll('{module}', mod.name);
       let reply;
       if (stage.kind === 'editor') {
-        const content = `${seedBlock(mod)}\n\n## Script to review\n\n${mod.currentScript}\n\n${prompt}`;
+        const content = `${seedBlock(mod)}\n\n${pathwayBlock(mod.objectives)}\n\n## Script to review\n\n${mod.currentScript}\n\n${prompt}`;
         reply = await callClaude({ system, messages: [{ role: 'user', content }], onText: setLive, signal: abort.current.signal });
         await update({ stages: { ...cur().stages, editor: { status: 'ready', output: reply } } });
         return;
@@ -76,7 +79,8 @@ export default function Workspace() {
       // a revision (userText) continues the conversation.
       const start = userText ? mod.thread.length : (st(stage.id).threadStart ?? mod.thread.length);
       const base = mod.thread.slice(0, start);
-      const content = base.length === 0 ? `${seedBlock(mod)}\n\n---\n\n${prompt}` : prompt;
+      const withTable = stage.id === 'plan' && !userText ? `${pathwayBlock(mod.objectives) || '(No pathway table has been entered.)'}\n\n---\n\n${prompt}` : prompt;
+      const content = base.length === 0 ? `${seedBlock(mod)}\n\n---\n\n${withTable}` : withTable;
       const thread = [...base, { role: 'user', content }];
       reply = await callClaude({ system, messages: thread, onText: setLive, signal: abort.current.signal });
       const patch = {
@@ -93,10 +97,6 @@ export default function Workspace() {
       if (stage.kind === 'json') {
         try { patch.parts = parsePerformance(reply); }
         catch (e) { setError(`Couldn't read the render data: ${e.message}. Run the stage again.`); }
-      }
-      if (stage.kind === 'cards') {
-        try { patch.reviewSets = { ...parseReviewSets(reply), claimsSeen: parseLedger(cur().stages.ledger?.output) }; }
-        catch (e) { setError(`Couldn't read the review cards: ${e.message}. Run the stage again.`); }
       }
       await update(patch);
     } catch (e) {
@@ -182,6 +182,41 @@ export default function Workspace() {
     finally { setSuggestingId(null); }
   }
 
+  async function suggestObjectives() {
+    const c = cur();
+    if ((c.objectives || []).length && !confirm('Replace the objectives in the table with the ones read from the seed and source files?')) return;
+    setError(''); setReadingObjectives(true);
+    try {
+      const sources = c.sources.map(s => `### ${s.name}\n\n${s.text}`).join('\n\n');
+      const ask = `Extract this course's learning objectives as a JSON array. Each item has:
+- "id": the ID the source uses (K1, F2, D1...). If it has none, number them K1, K2... for Know, F1... for Feel and D1... for Do, in order.
+- "objective": the objective in one sentence.
+- "type": Know, Feel or Do.
+- "subscale": Know is Remember or Observe; Feel is Believe, Value or Perceive; Do is Activate or Apply.
+- "policy": Gate, Remediate, Ask or Never skipped, as the source states it. If it doesn't, use Gate for Know and Do, and Remediate for Feel.
+- "lock" (Know only): "locked" if the source says it is compliance-locked or can't test out; "fallback" if it says test-out is allowed today but a lock may be confirmed; otherwise "open".
+Don't invent objectives. Reply with the JSON array only.`;
+      const reply = await callClaude({
+        system: 'You read training course seeds and scripts and extract their learning objectives. You reply with JSON only.',
+        messages: [{ role: 'user', content: `${c.seed || ''}\n\n${sources}\n\n---\n\n${ask}` }],
+      });
+      const list = JSON.parse(reply.slice(reply.indexOf('['), reply.lastIndexOf(']') + 1));
+      const objectives = list.map(o => {
+        const type = SUBSCALES[o.type] ? o.type : 'Know';
+        return {
+          ...blankObjective(),
+          id: String(o.id || '').trim(), objective: o.objective || '', type,
+          subscale: SUBSCALES[type].includes(o.subscale) ? o.subscale : SUBSCALES[type][0],
+          policy: POLICIES.includes(o.policy) ? o.policy : type === 'Feel' ? 'Remediate' : 'Gate',
+          lock: type === 'Know' && ['locked', 'fallback'].includes(o.lock) ? o.lock : 'open',
+          audio: type !== 'Do',
+        };
+      });
+      await update({ objectives });
+    } catch (e) { setError(`Couldn't read objectives: ${e.message}. Add them by hand, or try again.`); }
+    finally { setReadingObjectives(false); }
+  }
+
   async function applyFixes() {
     const draft = stages.find(s => s.id === 'validity');
     await run(draft, `Apply these fixes from the editor review to the latest script. Change nothing else. Then output the full revised script in the same format.\n\n${fixes}`);
@@ -226,7 +261,7 @@ export default function Workspace() {
             );
           })}
           <li><Link to={`/m/${m.id}/impact`} className="mt-3 block rounded-md border border-rule px-3 py-2 text-sm text-muted hover:text-ink">Claim impact</Link></li>
-          <li><Link to={`/m/${m.id}/render`} className={`mt-1 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>10. Render audio</Link></li>
+          <li><Link to={`/m/${m.id}/render`} className={`mt-1 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>9. Render audio</Link></li>
         </ol>
       </aside>
 
@@ -248,9 +283,11 @@ export default function Workspace() {
                   onChange={e => setSeedField(f.id, e.target.value)} onBlur={() => saveModule(cur())} />
               </div>
             ))}
+            <PathwayEditor objectives={m.objectives || []} suggesting={readingObjectives}
+              onChange={objectives => update({ objectives })} onSuggest={suggestObjectives} />
             <div>
-              <label className="label" htmlFor="src">Source files (text or Markdown)</label>
-              <input id="src" type="file" multiple accept=".txt,.md,.csv,.json" onChange={addSources} className="text-sm" />
+              <label className="label" htmlFor="src">Source files (text, Markdown or PDF)</label>
+              <input id="src" type="file" multiple accept=".txt,.md,.csv,.json,.pdf" onChange={addSources} className="text-sm" />
               <ul className="mt-2 space-y-1 text-sm">
                 {m.sources.map((s, i) => (
                   <li key={i} className="flex justify-between"><span>{s.name}</span>
@@ -295,11 +332,15 @@ export default function Workspace() {
               )}
               {busy !== stage.id && out && stage.kind === 'json' && (
                 m.parts
-                  ? <p className="text-sm">Render data is ready: {m.parts.parts.length} parts, {m.parts.assembly.length} listens. <Link className="underline" to={`/m/${m.id}/render`}>Go to rendering</Link>.</p>
+                  ? <div className="space-y-2 text-sm">
+                      <p>Render data is ready: {m.parts.parts.length} parts, {m.parts.assembly.length} listens. <Link className="underline" to={`/m/${m.id}/render`}>Go to rendering</Link>.</p>
+                      {(() => {
+                        const want = planParts(m.objectives || []).map(p => p.id), got = m.parts.parts.map(p => p.id);
+                        const missing = want.filter(x => !got.includes(x)), extra = want.length ? got.filter(x => !want.includes(x)) : [];
+                        return (missing.length || extra.length) ? <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs">Doesn't match the pathway table.{missing.length ? ` Missing: ${missing.join(', ')}.` : ''}{extra.length ? ` Not in the table: ${extra.join(', ')}.` : ''} Run the stage again.</p> : null;
+                      })()}
+                    </div>
                   : <pre className="max-h-96 overflow-auto rounded bg-paper p-3 text-xs">{out}</pre>
-              )}
-              {busy !== stage.id && out && stage.kind === 'cards' && (
-                m.reviewSets ? <ReviewSets data={m.reviewSets} /> : <pre className="max-h-96 overflow-auto rounded bg-paper p-3 text-xs">{out}</pre>
               )}
               {busy !== stage.id && out && stage.id === 'ledger' && ledgerRows.length > 0 && (
                 <LedgerReview rows={ledgerRows} meta={claimMeta} suggestingId={suggestingId} disabled={!!busy || !!suggestingId}

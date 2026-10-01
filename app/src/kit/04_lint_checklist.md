@@ -17,11 +17,9 @@ Stage 6 runs every check below and reports pass or fail, with the line and a fix
 
 - [ ] The open only promises content from positions that play in every listen.
 - [ ] No part refers to another part ("again," "earlier," "like we said").
-- [ ] Each Harder version stands alone.
-- [ ] Each add-on sits before its part's ending and doesn't re-introduce anyone.
+- [ ] Every Test-up and Reinforced version stands alone, and none assumes the Base was heard.
+- [ ] Every part ID is in the pathway table, and every table part is present. No remedial or review content appears.
 - [ ] There are no bridges, and each part's first exchange names its topic plainly.
-- [ ] Each review set (cards stage) covers one Know topic, has three to five cards, and every card and retry question carries a ledger ID.
-- [ ] No review card refers to the listen, the hosts or a character.
 
 ## C. Learning
 

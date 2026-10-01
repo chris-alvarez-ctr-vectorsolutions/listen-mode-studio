@@ -14,17 +14,18 @@ Stop when done.`,
   {
     id: 'plan', n: 3, title: 'Episode plan', kind: 'doc',
     gate: 'You approve the plan.',
-    prompt: `Using the production guide and the module files above, plan the episode for {module}.
-1. List the topic parts in order, one per objective, each with: a topic key (k1, k2... for Know topics, f1, f2... for Feel topics, d1, d2... for Do topics, numbered in order within each type), objective, KFD subscale, part type (Everyone or Skippable), and versions (Normal, Harder, Add-on). Where versions aren't specified, propose them with a one-line reason.
-2. Name the positions that play in every listen, and what the open may promise.
-3. Build the assembly table: each distinct listen, its parts in order, and estimated runtime, ordered from fewest parts to most.
-4. Describe the master script (the longest path).
+    prompt: `Using the production guide and the module files above, plan the episode for {module}. The pathway table above is fixed: the objectives, their KFD types, the versions each one needs, the part IDs and the listens. Don't add, drop, rename or re-route any of it. If the table is missing, say so and stop.
+1. For each part in the table, in order, give: the part ID, the objective, the angle in one line (the scenario, story or evidence it will use), the way in and way out, and the ledger claim IDs it rests on. A Test-up is a harder scene with the same facts, and the learner never heard the Base. A Reinforced version gives a Feel topic more weight with the same facts, and replaces the Base.
+2. Name the positions that play in every listen, and what the open may promise. The open can only promise content from positions that play in every listen.
+3. Copy the listens from the table into an assembly table, add each one's estimated runtime, and order them from fewest chapters to most. Flag any listen under three chapters.
+4. Describe the master script (the Full listen).
+5. List any objective the ledger doesn't support.
 Stop and wait for approval.`,
   },
   {
     id: 'beats', n: 4, title: 'Beat sheets', kind: 'doc',
     gate: 'A learning designer approves the beats.',
-    prompt: `Write a beat sheet for every asset in the approved plan: the open, each topic's Normal, each Harder, each Add-on and the close.
+    prompt: `Write a beat sheet for every asset in the approved plan: the open, every part in the pathway table (Base, Test-up, Reinforced or single version) and the close.
 Use the bullet style of the K1 beats in the voice example. For each, include: the objective, the way in and way out (none repeated within a listen), the one concrete detail, the claim IDs, the emotional target, any judgment hold question, and the word target. No dialogue yet.
 Stop and wait for approval.`,
   },
@@ -32,8 +33,8 @@ Stop and wait for approval.`,
     id: 'draft', n: 5, title: 'Draft', kind: 'script',
     gate: 'You review the script line by line.',
     prompt: `Write every asset from the approved beat sheets. Match the voice example above all: its moves, its register, and its conversational back-and-forth. Follow the production guide, but where a rule seems to pull away from the voice example, follow the example. Never reuse example wording from any kit file.
-Format: a heading per asset (## followed by the asset ID and title, for example "## 01-k1-normal · The blade at the bench"), then one line per speaker as "NAME: text". Cue lines (holds, stings, add-on seams) in ⟨ ⟩ on their own lines. No delivery tags yet.
-Write the master script first, marking each add-on seam and each part's ending, then the Harder versions as separate assets.
+Format: a heading per asset (## followed by the part ID from the pathway table and the title, for example "## 01-k1-base · The blade at the bench"), then one line per speaker as "NAME: text". Cue lines (holds and stings) in ⟨ ⟩ on their own lines. No delivery tags yet.
+Write the Full listen's parts first, in order, then each Test-up and Reinforced version as a separate asset. Every part stands alone, and a Test-up or Reinforced version never relies on the learner having heard the Base.
 Before you finish, check each asset against the "Bad, then better" and "What not to copy" sections of the voice example and fix anything that matches.
 After the scripts, add a trace table mapping every claim-bearing line to its ledger ID, and list anything you needed that the ledger doesn't contain.`,
   },
@@ -56,33 +57,17 @@ Stop after the list.`,
     gate: 'Ready to render.',
     prompt: `Run the performance pass on the final script in this conversation, following section 9 of the production guide. Don't change any wording.
 Return ONLY a JSON object, with no prose before or after it, in exactly this shape:
-{"parts":[{"id":"01-k1-normal","title":"The blade at the bench","claims":["C01","C03"],"segments":[{"id":"01-k1-normal-a","flag":null,"pauseAfter":0,"lines":[{"speaker":"DANA","text":"..."},{"speaker":"RAY","text":"[warmly] ..."}]}]}],
- "assembly":[{"name":"Master","parts":["00-open","01-k1-normal"]}]}
+{"parts":[{"id":"01-k1-base","title":"The blade at the bench","claims":["C01","C03"],"segments":[{"id":"01-k1-base-a","flag":null,"pauseAfter":0,"lines":[{"speaker":"DANA","text":"..."},{"speaker":"RAY","text":"[warmly] ..."}]}]}],
+ "assembly":[{"name":"Master","parts":["00-open","01-k1-base","02-close"]}]}
 Rules:
-- Every asset is a part, in master-script order, then Harder versions.
-- Part IDs are lowercase and follow one pattern, because the audio and the listen prototype read them: "NN-topic" or "NN-topic-variant", where NN is the topic's position in the listen (00 for the open, then 01, 02... in order; the close takes the last number). The open is "00-open" and the close is, for example, "06-close". "topic" is the plan's topic key (k1, f2, d1). "variant" is normal, harder or addon, and is left off only when a topic has a single version (for example "03-f2"). Every version of a topic uses the same NN and topic, so "02-k2-normal" and "02-k2-harder" share a position. Use the IDs from the script headings when they already follow this pattern, and fix them when they don't.
-- "claims" on each part lists every ledger claim ID its lines rest on, taken from the trace table (empty for the open and close if they carry none). Add-ons list their own.
+- Every asset is a part, in listen order, then the Test-up and Reinforced versions.
+- Part IDs come from the pathway table above. Use them exactly, because the audio and the listen prototype read them: "NN-topic-variant", where NN is the topic's position in the listen (00 for the open, then 01, 02... in order; the close takes the last number), topic is the objective ID in lowercase (k1, f1), and variant is base, testup or reinforced. A topic with a single version has no variant (for example "03-f2"). Every version of a topic shares the same NN and topic. If a script heading uses a different ID, fix it to the table's.
+- "claims" on each part lists every ledger claim ID its lines rest on, taken from the trace table (empty for the open and close if they carry none).
 - Speaker names in capitals, exactly as in the script.
 - Delivery tags only from each voice's palette, two to four per part, where the meaning or emotion shifts. CAPS on one or two words per part. Spell numbers and initialisms as spoken.
-- Split segments at every hold, add-on seam and part ending. pauseAfter is the seconds of silence after the segment: 3 for a judgment hold, 2 for an emotional hold, 0 otherwise.
+- Split segments at every hold and at the part ending. pauseAfter is the seconds of silence after the segment: 3 for a judgment hold, 2 for an emotional hold, 0 otherwise.
 - Put every line tagged [FLAG] in its own segment and set "flag" to its flag ID. Remove the [FLAG] marker from the text.
 - No cue text, stage directions or segment IDs inside any line's text.
-- "assembly" lists every distinct listen from the approved plan, each as an ordered list of part IDs.`,
-  },
-  {
-    id: 'cards', n: 9, title: 'Review cards', kind: 'cards',
-    gate: 'An SME and a learning designer approve every card against the ledger.',
-    prompt: `Write the review set for each Know topic in the approved plan. A review set is what a learner sees after the checks when they miss a question on that topic. It is read and answered on screen, not heard, so nothing in it is a script.
-Return ONLY a JSON object, with no prose before or after it, in exactly this shape:
-{"reviewSets":[{"topic":"k1","title":"Short plain title",
-  "cards":[{"front":"A question or prompt","back":"The answer in one or two plain sentences","claims":["C03"]}],
-  "retry":[{"question":"...","options":["...","...","..."],"answer":0,"feedback":"One sentence on why.","claims":["C03"]}]}]}
-Rules:
-- "topic" is the same topic key used in the part IDs (k1, k2...). One set per Know topic. Skip Feel and Do topics.
-- Three to five cards per topic. One fact per card, in plain words with contractions allowed and few idioms.
-- Every card and retry question carries the ledger IDs it rests on. Don't add, strengthen or combine claims. If a fact you need isn't in the ledger, leave it out and list it in a final key "missing":["..."].
-- Retry questions test the same fact in a new situation. The learner's original check isn't known here, so don't copy any question from the script.
-- "answer" is the zero-based index of the correct option. Give two to four options, with one clearly correct.
-- Nothing refers to the listen, the hosts or any character. Each card stands alone.`,
+- "assembly" lists every listen in the pathway table with the same names, each as an ordered list of part IDs.`,
   },
 ];

@@ -1,4 +1,4 @@
-// Claim-to-part impact: which parts and review cards rest on which ledger claims, and which of them
+// Claim-to-part impact: which parts rest on which ledger claims, and which of them
 // were made from a claim that has since changed.
 
 // Ledger table ("ID | claim | source | flag") -> { C01: 'claim text', ... }
@@ -65,9 +65,7 @@ const isOpenOrClose = id => /(^|[-_])(open|close)$/i.test(id);
 export function buildImpact(m) {
   const ledger = parseLedger(m.stages?.ledger?.output);
   const parts = m.parts?.parts || [];
-  const sets = m.reviewSets?.sets || [];
   const timings = m.timings || {};
-  const cardIds = s => [...(s.cards || []), ...(s.retry || [])].flatMap(x => x.claims || []);
 
   const partRows = parts.map(p => {
     const seen = timings[p.id]?.claims;
@@ -79,26 +77,19 @@ export function buildImpact(m) {
       stale: seen ? staleIds(seen, ledger) : [],
     };
   });
-  const setRows = sets.map(s => ({
-    topic: s.topic,
-    claims: [...new Set(cardIds(s))],
-    stale: m.reviewSets?.claimsSeen ? staleIds(snapshot(cardIds(s), m.reviewSets.claimsSeen), ledger) : [],
-  }));
-
   const claimRows = Object.keys(ledger).map(id => ({
     id, text: ledger[id],
     parts: partRows.filter(p => p.claims?.includes(id)).map(p => p.id),
-    sets: setRows.filter(s => s.claims.includes(id)).map(s => s.topic),
   }));
 
   const issues = [];
   const known = new Set(Object.keys(ledger));
-  const cited = new Set([...partRows.flatMap(p => p.claims || []), ...setRows.flatMap(s => s.claims)]);
-  for (const c of claimRows) if (!c.parts.length && !c.sets.length) issues.push(`${c.id} isn't used by any part or card.`);
+  const cited = new Set(partRows.flatMap(p => p.claims || []));
+  for (const c of claimRows) if (!c.parts.length) issues.push(`${c.id} isn't used by any part.`);
   for (const id of cited) if (!known.has(id)) issues.push(`${id} is cited but isn't in the ledger.`);
   for (const p of partRows) {
     if (!p.claims) issues.push(`${p.id} has no claim data. Run the performance pass again.`);
     else if (!p.claims.length && !isOpenOrClose(p.id)) issues.push(`${p.id} cites no claims.`);
   }
-  return { ledger, version: ledgerVersion(ledger), claimRows, partRows, setRows, issues };
+  return { ledger, version: ledgerVersion(ledger), claimRows, partRows, issues };
 }

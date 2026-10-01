@@ -54,6 +54,7 @@ export function newModule(name) {
     thread: [],           // the running conversation for stages 2-8
     stages: {},           // stageId -> { status, output, history: [] }
     currentScript: '',
+    objectives: [],       // pathway table: [{ id, objective, type, subscale, policy, lock, audio }]
     parts: null,          // performance-pass JSON: { parts, assembly }
     notes: [],            // line comments waiting to be sent
     createdAt: Date.now(),

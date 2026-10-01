@@ -105,5 +105,5 @@ These were caught in review. Don't repeat them.
 
 - **"Hundreds of injuries related to it every year"** is not in the claims ledger. Never state a figure the ledger doesn't hold.
 - **The example list** (nails, knives, metal) must be checked against the source content before it's used.
-- **The open promises "what they are,"** which is the skippable blade topic's job. An open only promises what every learner hears.
+- **The open promises "what they are,"** which is the job of a topic that can test out. An open only promises what every learner hears.
 - **"Any final thoughts?" and "Solid advice, Ray"** are fine once per listen, not in every part.

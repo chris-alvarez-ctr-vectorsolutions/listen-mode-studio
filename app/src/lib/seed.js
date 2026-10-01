@@ -30,6 +30,12 @@ export const EXAMPLE_FIELDS = {
   notes: 'This example is fictional. Use it to see how the stages respond to a well-formed seed.',
 };
 
+export const EXAMPLE_OBJECTIVES = [
+  { id: 'K1', objective: 'State when lockout/tagout is required.', type: 'Know', subscale: 'Remember', policy: 'Gate', lock: 'open', audio: true },
+  { id: 'K2', objective: 'List the steps to lock out a machine in order.', type: 'Know', subscale: 'Remember', policy: 'Gate', lock: 'locked', audio: true },
+  { id: 'K3', objective: 'Say what to do if the person who placed a lock is not available.', type: 'Know', subscale: 'Observe', policy: 'Remediate', lock: 'locked', audio: true },
+];
+
 export function composeSeed(fields) {
   return SEED_FIELDS
     .filter(f => (fields[f.id] || '').trim())
