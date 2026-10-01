@@ -9,7 +9,7 @@ const base = s => {
 // One Text to Dialogue request: [{ text, voice_id }] -> mp3 ArrayBuffer.
 export async function dialogue(inputs, { previousRequestIds = [] } = {}) {
   const s = loadSettings();
-  const body = { inputs, model_id: s.elevenModel };
+  const body = { inputs, model_id: s.elevenModel, settings: { stability: Number(s.stability) } };
   if (previousRequestIds.length) body.previous_request_ids = previousRequestIds.slice(-3);
   const res = await fetch(`${base(s)}/v1/text-to-dialogue?output_format=${encodeURIComponent(s.outputFormat)}`, {
     method: 'POST',

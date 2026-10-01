@@ -55,6 +55,9 @@ export default function Settings() {
               ? <select id="em" className="field" value={s.elevenModel} onChange={e => set('elevenModel', e.target.value)}>{models.map(m => <option key={m.id} value={m.id}>{m.name} ({m.id})</option>)}</select>
               : <input id="em" className="field" value={s.elevenModel} onChange={e => set('elevenModel', e.target.value)} />}
           </div>
+          <div><label className="label" htmlFor="st">Stability</label>
+            <select id="st" className="field" value={s.stability} onChange={e => set('stability', Number(e.target.value))}>
+              <option value={0}>Creative (0)</option><option value={0.5}>Natural (0.5)</option><option value={1}>Robust (1)</option></select></div>
           <div><label className="label" htmlFor="of">Output format</label>
             <input id="of" className="field" value={s.outputFormat} onChange={e => set('outputFormat', e.target.value)} /></div>
         </div>

@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS = {
   claudeModel: 'claude-sonnet-5',
   maxTokens: 16000,
   elevenModel: 'eleven_v3',
+  stability: 0,            // 0 Creative, 0.5 Natural, 1 Robust (sent with every dialogue request)
   outputFormat: 'mp3_44100_128',
   gapBetweenLines: 0.25,   // seconds, only between request chunks
   gapBetweenParts: 1.5,    // seconds of silence standing in for a sting
