@@ -1,6 +1,6 @@
 # Test pack: Making an Italian Focaccia Sandwich
 
-A fictional module for running the full pipeline once, start to finish. Every claim below is made up for the test, so nothing needs a real SME. Leave the SME box **unchecked** and your audio will be named `DRAFT-...`, which is what you want here.
+A fictional module for running the full pipeline once, start to finish. Every claim below is made up for the test, so nothing needs a real SME. Leave the SME sign-off on the Claims ledger stage **unchecked** and your audio will be named `DRAFT-...`, which is what you want here.
 
 There is a second, realistic test at the bottom that uses the Contain the Sharp video script as a source file.
 
