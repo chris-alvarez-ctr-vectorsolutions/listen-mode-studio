@@ -1,4 +1,5 @@
 import { buildImpact } from './claims.js';
+import { combineCues, toVtt } from './captions.js';
 
 // Turns a module's rendered parts and recorded timings into the manifest the listen prototype plays from.
 const VARIANTS = ['normal', 'harder', 'addon'];
@@ -31,6 +32,7 @@ export function buildManifest(m, settings, rendered) {
   const quickTakes = {};
   const normalIds = {};
   const files = [];
+  const captions = [];   // [{ path, vtt }] written into the package next to the audio
   const impact = buildImpact(m);
   for (const p of impact.partRows) if (p.stale.length) warnings.push(`"${p.id}" was rendered before ${p.stale.join(', ')} changed. Render it again.`);
   for (const s of impact.setRows) if (s.stale.length) warnings.push(`Review cards for "${s.topic}" were written before ${s.stale.join(', ')} changed. Run the Review cards stage again.`);
@@ -52,6 +54,11 @@ export function buildManifest(m, settings, rendered) {
       })),
     };
     files.push({ partId: p.id, name: fileNameFor(m, p.id) });
+    if (t?.cues?.length) {
+      const path = `audio/${fileNameFor(m, p.id).replace(/\.wav$/, '.vtt')}`;
+      captions.push({ path, vtt: toVtt(t.cues) });
+      entry.captions = path;
+    }
     if (c.kind === 'quickTake') { quickTakes[c.topic] = entry; continue; }
     const topic = (topics[c.topic] ||= { position: c.pos });
     topic.position = Math.min(topic.position, c.pos);
@@ -85,9 +92,20 @@ export function buildManifest(m, settings, rendered) {
     topics,
     quickTakes,
     reviewSets: Object.fromEntries((m.reviewSets?.sets || []).map(s => [s.topic, { title: s.title, cards: s.cards, retry: s.retry }])),
-    listens: (m.parts?.assembly || []).map(l => ({ name: l.name, parts: l.parts })),
+    listens: (m.parts?.assembly || []).map(l => {
+      const out = { name: l.name, parts: l.parts };
+      const ts = l.parts.map(pid => timings[pid]);
+      if (ts.every(t => t?.cues?.length && t.duration != null)) {
+        const path = `captions/${m.ledgerSigned ? '' : 'DRAFT-'}${l.name.replace(/[^\w .-]+/g, '').trim() || 'listen'}.vtt`;
+        captions.push({ path, vtt: toVtt(combineCues(ts, settings.gapBetweenParts)) });
+        out.captions = path;
+      } else if (l.parts.some(pid => rendered.has(pid))) {
+        warnings.push(`"${l.name}" has no combined captions because some of its parts have none. Render them again.`);
+      }
+      return out;
+    }),
   };
-  return { manifest, files, warnings };
+  return { manifest, files, captions, warnings };
 }
 
 const round = n => (n == null ? null : Math.round(n * 1000) / 1000);

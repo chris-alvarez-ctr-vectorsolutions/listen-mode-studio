@@ -7,7 +7,7 @@ import { dialogue } from '../lib/eleven.js';
 import { blobToSamples, decode, join, wavBlob } from '../lib/audio.js';
 import { download, readFileText } from '../lib/download.js';
 import { speakerColor } from '../components/speaker.js';
-import { cuesFromResponse, toVtt } from '../lib/captions.js';
+import { combineCues, cuesFromResponse, toVtt } from '../lib/captions.js';
 import { buildManifest, fileNameFor } from '../lib/manifest.js';
 import { buildImpact, parseLedger, snapshot } from '../lib/claims.js';
 
@@ -101,14 +101,11 @@ export default function Render() {
     try {
       const rendered = new Set();
       for (const p of mod.parts?.parts || []) if (await getAudio(mod.id, p.id)) rendered.add(p.id);
-      const { manifest, files, warnings: warn } = buildManifest(mod, settings, rendered);
+      const { manifest, files, captions, warnings: warn } = buildManifest(mod, settings, rendered);
       const zip = new JSZip();
       zip.file('manifest.json', JSON.stringify(manifest, null, 2));
-      for (const f of files) {
-        zip.file(`audio/${f.name}`, await getAudio(mod.id, f.partId));
-        const cues = mod.timings?.[f.partId]?.cues;
-        if (cues?.length) zip.file(`audio/${f.name.replace(/\.wav$/, '.vtt')}`, toVtt(cues));
-      }
+      for (const f of files) zip.file(`audio/${f.name}`, await getAudio(mod.id, f.partId));
+      for (const c of captions) zip.file(c.path, c.vtt);
       setWarnings(warn);
       download(`${prefix}${mod.name} prototype package.zip`, await zip.generateAsync({ type: 'blob' }));
     } catch (e) { setError(e.message); }
@@ -124,16 +121,13 @@ export default function Render() {
         items.push({ buffer: null, samples: await blobToSamples(b) });
       }
       const pieces = [];
-      const cues = [];
       const noCaps = [];
-      let at = 0;   // seconds into the listen where the next part starts
       items.forEach((it, i) => {
-        if (i) { pieces.push(new Float32Array(Math.round(settings.gapBetweenParts * 44100))); at += settings.gapBetweenParts; }
+        if (i) pieces.push(new Float32Array(Math.round(settings.gapBetweenParts * 44100)));
         pieces.push(it.samples);
-        const pc = m.timings?.[listen.parts[i]]?.cues;
-        if (pc?.length) cues.push(...pc.map(c => ({ ...c, start: c.start + at, end: c.end + at }))); else noCaps.push(listen.parts[i]);
-        at += it.samples.length / 44100;
+        if (!m.timings?.[listen.parts[i]]?.cues?.length) noCaps.push(listen.parts[i]);
       });
+      const cues = combineCues(items.map((it, i) => ({ cues: m.timings?.[listen.parts[i]]?.cues, duration: it.samples.length / 44100 })), settings.gapBetweenParts);
       const total = pieces.reduce((k, p) => k + p.length, 0);
       const outArr = new Float32Array(total);
       let off = 0; for (const p of pieces) { outArr.set(p, off); off += p.length; }

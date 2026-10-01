@@ -103,3 +103,15 @@ export function toVtt(cues) {
     `${i + 1}\n${stamp(c.start)} --> ${stamp(c.end)}\n<v ${c.speaker}>${esc(c.text)}`).join('\n\n');
   return `WEBVTT\n\n${body}\n`;
 }
+
+// Joins parts into one listen: parts = [{ cues, duration }] in order, gap = seconds of silence between parts.
+export function combineCues(parts, gap) {
+  const out = [];
+  let at = 0;
+  parts.forEach((p, i) => {
+    if (i) at += gap;
+    out.push(...(p.cues || []).map(c => ({ ...c, start: c.start + at, end: c.end + at })));
+    at += p.duration;
+  });
+  return out;
+}
