@@ -8,19 +8,19 @@ export const DEFAULT_SETTINGS = {
   appToken: '',
   claudeModel: 'claude-sonnet-5',
   maxTokens: 16000,
-  elevenModel: 'eleven_v3',
+  elevenModel: 'eleven_v4',
   stability: 0,            // 0 Creative, 0.5 Natural, 1 Robust (sent with every dialogue request)
   outputFormat: 'mp3_44100_128',
   gapBetweenLines: 0.25,   // seconds, only between request chunks
   gapBetweenParts: 1.5,    // seconds of silence standing in for a sting
   themeMusic: true,        // mix theme music into the open and the close
   introTailSec: 5,         // how long the intro music keeps playing after the dialogue ends
-  outroTailSec: 3.5,        // the same for the outro
+  outroTailSec: 3.5,       // the same for the outro
   musicLevel: 0.7,         // theme music level under and after the dialogue (0 to 1)
   voices: [
-    { speaker: 'DANA', voiceId: '' },
-    { speaker: 'RAY', voiceId: '' },
-    { speaker: 'JACOB', voiceId: '' },
+    { speaker: 'DANA', voiceId: 'kdmDKE6EkgrWrrykO9Qt' },
+    { speaker: 'RAY', voiceId: '1SM7GgM6IMuvQlz2BwM3' },
+    { speaker: 'JACOB', voiceId: 'gfRt6Z3Z8aTbpLfexQ7N' },
   ],
 };
 

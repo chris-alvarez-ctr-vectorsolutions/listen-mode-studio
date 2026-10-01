@@ -30,7 +30,7 @@ npm install
 npm run dev
 ```
 
-Open Settings, paste the worker URL (and app token if you set one), click **Load my voices and models**, pick the ElevenLabs model, and map each speaker (DANA, RAY, JACOB) to a voice.
+Open Settings, paste the worker URL (and app token if you set one), click **Load my voices and models**, pick the ElevenLabs model, and map each speaker (DANA, RAY, JACOB) to a voice. New browsers start with the team's default model (Eleven v4), stability (Creative) and voices for DANA, RAY and JACOB already filled in; change them here only if you need to. Settings you've saved in your browser take priority over the defaults.
 
 ### 3. Deploy the app
 
