@@ -69,11 +69,11 @@ export default function Settings() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div><label className="label" htmlFor="em">ElevenLabs model</label>
             {models.length
-              ? <select id="em" className="field" value={s.elevenModel} onChange={e => set('elevenModel', e.target.value)}>{models.map(m => <option key={m.id} value={m.id}>{m.name} ({m.id})</option>)}</select>
+              ? <select id="em" className="select" value={s.elevenModel} onChange={e => set('elevenModel', e.target.value)}>{models.map(m => <option key={m.id} value={m.id}>{m.name} ({m.id})</option>)}</select>
               : <input id="em" className="field" value={s.elevenModel} onChange={e => set('elevenModel', e.target.value)} />}
           </div>
           <div><label className="label" htmlFor="st">Stability</label>
-            <select id="st" className="field" value={s.stability} onChange={e => set('stability', Number(e.target.value))}>
+            <select id="st" className="select" value={s.stability} onChange={e => set('stability', Number(e.target.value))}>
               <option value={0}>Creative (0)</option><option value={0.5}>Natural (0.5)</option><option value={1}>Robust (1)</option></select></div>
           <div><label className="label" htmlFor="of">Output format</label>
             <input id="of" className="field" value={s.outputFormat} onChange={e => set('outputFormat', e.target.value)} /></div>
@@ -84,7 +84,7 @@ export default function Settings() {
             <div key={i} className="flex gap-2">
               <input aria-label="Speaker" className="field w-32 uppercase" value={v.speaker} onChange={e => setVoice(i, { speaker: e.target.value.toUpperCase() })} />
               {voices.length
-                ? <select aria-label={`Voice for ${v.speaker}`} className="field" value={v.voiceId} onChange={e => setVoice(i, { voiceId: e.target.value })}>
+                ? <select aria-label={`Voice for ${v.speaker}`} className="select" value={v.voiceId} onChange={e => setVoice(i, { voiceId: e.target.value })}>
                     <option value="">Choose a voice</option>{voices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>
                 : <input aria-label={`Voice ID for ${v.speaker}`} className="field" placeholder="Voice ID" value={v.voiceId} onChange={e => setVoice(i, { voiceId: e.target.value })} />}
               <button className="btn" onClick={() => set('voices', s.voices.filter((_, j) => j !== i))}>Remove</button>

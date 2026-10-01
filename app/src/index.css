@@ -11,6 +11,8 @@
   .btn-primary { @apply btn border-ink bg-ink text-white hover:bg-black; }
   .btn-onair { @apply btn border-onair bg-onair text-white hover:brightness-95; }
   .field { @apply w-full rounded-md border border-rule bg-panel px-3 py-2 text-sm focus:border-ink focus:outline-none; }
+  .select { @apply field appearance-none bg-no-repeat pr-9; background-position: right 0.75rem center; background-size: 1rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%235b6472' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 8l5 5 5-5'/%3E%3C/svg%3E"); }
   .label { @apply mb-1 block text-sm font-medium; }
   .prose-out { @apply font-script text-[15px] leading-relaxed; }
   .prose-out h1, .prose-out h2, .prose-out h3 { @apply font-ui font-semibold mt-5 mb-2; }

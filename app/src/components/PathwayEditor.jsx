@@ -20,24 +20,36 @@ export default function PathwayEditor({ objectives, onChange, onSuggest, suggest
         <p className="mb-1 text-xs text-muted">One row per objective, with the ID the course uses (K1, F2, D1). The type, policy and lock decide which audio versions exist and how the pre-check routes to them. Feel scores of 3 or lower count as low. Remedial content and review cards are not audio and aren't written here.</p>
       </div>
 
-      {objectives.map((o, i) => (
+      {objectives.map((o, i) => o.type === 'Do' ? (
+        <div key={i} className="rounded-md border border-dashed border-rule p-3">
+          <div className="grid items-center gap-2 sm:grid-cols-[80px_1fr_auto_auto]">
+            <input aria-label="Objective ID" className="field font-mono" placeholder="D1" value={o.id} onChange={e => set(i, { id: e.target.value.trim() })} />
+            <input aria-label="Objective" className="field" placeholder="The learner can…" value={o.objective} onChange={e => set(i, { objective: e.target.value })} />
+            <select aria-label="Type" className="select w-auto" value={o.type} onChange={e => set(i, { type: e.target.value })}>
+              {Object.keys(SUBSCALES).map(t => <option key={t}>{t}</option>)}
+            </select>
+            <button className="btn" onClick={() => onChange(objectives.filter((_, j) => j !== i))}>Remove</button>
+          </div>
+          <p className="mt-2 text-xs text-muted">Do content will not be included. Listen Mode audio isn't developed for Do objectives, so this one is left out of the parts and listens.</p>
+        </div>
+      ) : (
         <div key={i} className="rounded-md border border-rule bg-paper p-3">
           <div className="grid gap-2 sm:grid-cols-[80px_1fr]">
             <input aria-label="Objective ID" className="field font-mono" placeholder="K1" value={o.id} onChange={e => set(i, { id: e.target.value.trim() })} />
             <input aria-label="Objective" className="field" placeholder="The learner can…" value={o.objective} onChange={e => set(i, { objective: e.target.value })} />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <select aria-label="Type" className="field w-auto" value={o.type} onChange={e => set(i, { type: e.target.value })}>
+            <select aria-label="Type" className="select w-auto" value={o.type} onChange={e => set(i, { type: e.target.value })}>
               {Object.keys(SUBSCALES).map(t => <option key={t}>{t}</option>)}
             </select>
-            <select aria-label="Subscale" className="field w-auto" value={o.subscale} onChange={e => set(i, { subscale: e.target.value })}>
+            <select aria-label="Subscale" className="select w-auto" value={o.subscale} onChange={e => set(i, { subscale: e.target.value })}>
               {SUBSCALES[o.type].map(t => <option key={t}>{t}</option>)}
             </select>
-            <select aria-label="Policy" className="field w-auto" value={o.policy} onChange={e => set(i, { policy: e.target.value })}>
+            <select aria-label="Policy" className="select w-auto" value={o.policy} onChange={e => set(i, { policy: e.target.value })}>
               {POLICIES.map(t => <option key={t}>{t}</option>)}
             </select>
             {o.type === 'Know' && (
-              <select aria-label="Compliance lock" className="field w-auto" value={o.lock} onChange={e => set(i, { lock: e.target.value })}>
+              <select aria-label="Compliance lock" className="select w-auto" value={o.lock} onChange={e => set(i, { lock: e.target.value })}>
                 {LOCKS.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
               </select>
             )}
