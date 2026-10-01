@@ -42,7 +42,7 @@ Push to `main`. The workflow in `.github/workflows/pages.yml` builds `app/` and 
 2. **Stages 2 to 8.** Run each stage, read the output, then approve it or write notes and revise. On script stages, click any line to leave a note and an optional better version. **Save as rule** adds the note to the kit so every future module benefits.
 3. **Editor pass** runs in a fresh conversation, so the reviewer hasn't seen itself write the script. Paste the fixes you agree with and apply them.
 4. **Performance pass** returns render data (parts, segments, holds, flags, listens).
-5. **Render.** Render one part, check the voices, then render the rest. Build any listen from its parts. You can also upload `.txt` parts with `NAME: text` lines (and `⟨ HOLD 3s ⟩` cues) to render scripts made elsewhere.
+5. **Render.** Render one part, check the voices, then render the rest. Build any listen from its parts. Each render records where every segment starts, including the seam where an add-on is spliced in (the start of the part's ending segment). **Render all parts** finishes by downloading a prototype package (`manifest.json` plus the audio); **Export for prototype** does the same at any time. You can also upload `.txt` parts with `NAME: text` lines (and `⟨ HOLD 3s ⟩` cues) to render scripts made elsewhere.
 
 ## The kit
 

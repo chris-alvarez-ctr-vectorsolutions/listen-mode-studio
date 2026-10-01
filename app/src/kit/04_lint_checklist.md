@@ -20,7 +20,8 @@ Stage 6 runs every check below and reports pass or fail, with the line and a fix
 - [ ] Each Harder version stands alone.
 - [ ] Each add-on sits before its part's ending and doesn't re-introduce anyone.
 - [ ] There are no bridges, and each part's first exchange names its topic plainly.
-- [ ] Each quick take has its own open and close line and never refers to the listen.
+- [ ] Each review set (cards stage) covers one Know topic, has three to five cards, and every card and retry question carries a ledger ID.
+- [ ] No review card refers to the listen, the hosts or a character.
 
 ## C. Learning
 

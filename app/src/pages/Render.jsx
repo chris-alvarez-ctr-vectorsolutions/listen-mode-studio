@@ -7,6 +7,7 @@ import { dialogue } from '../lib/eleven.js';
 import { blobToSamples, decode, join, wavBlob } from '../lib/audio.js';
 import { download, readFileText } from '../lib/download.js';
 import { speakerColor } from '../components/speaker.js';
+import { buildManifest, fileNameFor } from '../lib/manifest.js';
 
 export default function Render() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function Render() {
   const [status, setStatus] = useState({});
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
+  const [warnings, setWarnings] = useState([]);
   const settings = loadSettings();
 
   async function loadUrls(mod) {
@@ -51,27 +53,56 @@ export default function Render() {
     try {
       const items = [];
       const prior = [];
+      const marks = [];   // where each segment starts, in seconds, for the seam and transcript sync
+      let t = 0;
+      const add = it => { items.push(it); t += it.buffer ? it.buffer.length / it.buffer.sampleRate : it.silence; };
       let n = 0;
       const total = part.segments.reduce((k, s) => k + chunkLines(s.lines).length, 0);
       for (const seg of part.segments) {
+        marks.push({ id: seg.id, start: t });
         for (const chunk of chunkLines(seg.lines)) {
           n += 1; say(`Rendering ${n} of ${total}`);
           const inputs = chunk.map(l => ({ text: l.text, voice_id: voiceFor(l.speaker) }));
           const { audio, requestId } = await dialogue(inputs, { previousRequestIds: prior });
           if (requestId) prior.push(requestId);
-          items.push({ buffer: await decode(audio) });
-          items.push({ silence: settings.gapBetweenLines });
+          add({ buffer: await decode(audio) });
+          add({ silence: settings.gapBetweenLines });
         }
-        if (seg.pauseAfter) items.push({ silence: Number(seg.pauseAfter) });
+        if (seg.pauseAfter) add({ silence: Number(seg.pauseAfter) });
       }
       const blob = wavBlob(join(items));
       await saveAudio(m.id, part.id, blob);
+      // The ending is the last segment, so an add-on is spliced in where it starts.
+      const timing = { duration: t, seamAt: marks.length > 1 ? marks[marks.length - 1].start : null, segments: marks };
+      const cur = await getModule(m.id);
+      await saveModule({ ...cur, timings: { ...cur.timings, [part.id]: timing } });
+      setM(prev => ({ ...prev, timings: { ...prev.timings, [part.id]: timing } }));
       setUrls(u => ({ ...u, [part.id]: URL.createObjectURL(blob) }));
       say('Rendered');
-    } catch (e) { say('Failed'); setError(e.message); }
+      return true;
+    } catch (e) { say('Failed'); setError(e.message); return false; }
   }
 
-  async function renderAll() { for (const p of parts) await renderPart(p); }
+  async function renderAll() {
+    let ok = true;
+    for (const p of parts) ok = (await renderPart(p)) && ok;
+    if (ok) await exportPackage(await getModule(m.id));
+  }
+
+  // manifest.json (with seam times) plus every rendered part, in one zip for the prototype.
+  async function exportPackage(mod = m) {
+    setError('');
+    try {
+      const rendered = new Set();
+      for (const p of mod.parts?.parts || []) if (await getAudio(mod.id, p.id)) rendered.add(p.id);
+      const { manifest, files, warnings: warn } = buildManifest(mod, settings, rendered);
+      const zip = new JSZip();
+      zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+      for (const f of files) zip.file(`audio/${f.name}`, await getAudio(mod.id, f.partId));
+      setWarnings(warn);
+      download(`${prefix}${mod.name} prototype package.zip`, await zip.generateAsync({ type: 'blob' }));
+    } catch (e) { setError(e.message); }
+  }
 
   async function buildListen(listen) {
     setError('');
@@ -95,7 +126,7 @@ export default function Render() {
     const zip = new JSZip();
     for (const p of parts) {
       const b = await getAudio(m.id, p.id);
-      if (b) zip.file(`${prefix}${p.id}.wav`, b);
+      if (b) zip.file(fileNameFor(m, p.id), b);
     }
     download(`${prefix}${m.name} parts.zip`, await zip.generateAsync({ type: 'blob' }));
   }
@@ -111,11 +142,18 @@ export default function Render() {
         <div className="flex flex-wrap gap-2">
           <label className="btn cursor-pointer">Add .txt parts<input type="file" multiple accept=".txt" className="hidden" onChange={importTxt} /></label>
           <button className="btn" disabled={!parts.length} onClick={downloadAll}>Download all parts</button>
+          <button className="btn" disabled={!parts.length} onClick={() => exportPackage()}>Export for prototype</button>
           <button className="btn-onair" disabled={!parts.length || missing.length > 0} onClick={renderAll}>Render all parts</button>
         </div>
       </div>
 
       {error && <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      {warnings.length > 0 && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
+          <p className="font-medium">The prototype package has gaps:</p>
+          <ul className="list-disc pl-5">{warnings.map(w => <li key={w}>{w}</li>)}</ul>
+        </div>
+      )}
       {missing.length > 0 && (
         <p className="rounded-md border border-rule bg-panel p-3 text-sm">
           No voice set for {missing.join(', ')}. Add {missing.length > 1 ? 'them' : 'it'} in <Link className="underline" to="/settings">Settings</Link> before rendering.
@@ -132,7 +170,7 @@ export default function Render() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <button className="text-left" onClick={() => setOpen(open === p.id ? null : p.id)}>
                   <div className="font-medium">{p.title}</div>
-                  <div className="text-sm text-muted">{p.id} · {lines} lines{flags.length ? ` · waiting on ${flags.join(', ')}` : ''}</div>
+                  <div className="text-sm text-muted">{p.id} · {lines} lines{flags.length ? ` · waiting on ${flags.join(', ')}` : ''}{m.timings?.[p.id]?.seamAt != null ? ` · seam at ${m.timings[p.id].seamAt.toFixed(1)}s` : ''}</div>
                 </button>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-muted">{status[p.id] || ''}</span>

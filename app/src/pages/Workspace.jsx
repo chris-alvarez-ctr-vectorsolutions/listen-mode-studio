@@ -4,10 +4,11 @@ import { getModule, saveModule } from '../lib/store.js';
 import { addRuleToKit, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
 import { EXAMPLE_FIELDS, SEED_FIELDS, composeSeed, missingRequired, seedFieldsOf } from '../lib/seed.js';
-import { parsePerformance } from '../lib/script.js';
+import { parsePerformance, parseReviewSets } from '../lib/script.js';
 import { readFileText } from '../lib/download.js';
 import Markdown from '../components/Markdown.jsx';
 import ScriptReview from '../components/ScriptReview.jsx';
+import ReviewSets from '../components/ReviewSets.jsx';
 
 function seedBlock(m) {
   const sources = m.sources.map(s => `### ${s.name}\n\n${s.text}`).join('\n\n');
@@ -84,6 +85,10 @@ export default function Workspace() {
         try { patch.parts = parsePerformance(reply); }
         catch (e) { setError(`Couldn't read the render data: ${e.message}. Run the stage again.`); }
       }
+      if (stage.kind === 'cards') {
+        try { patch.reviewSets = parseReviewSets(reply); }
+        catch (e) { setError(`Couldn't read the review cards: ${e.message}. Run the stage again.`); }
+      }
       await update(patch);
     } catch (e) {
       if (e.name !== 'AbortError') setError(e.message);
@@ -142,7 +147,7 @@ export default function Workspace() {
               </li>
             );
           })}
-          <li><Link to={`/m/${m.id}/render`} className={`mt-3 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>9. Render audio</Link></li>
+          <li><Link to={`/m/${m.id}/render`} className={`mt-3 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>10. Render audio</Link></li>
         </ol>
       </aside>
 
@@ -212,6 +217,9 @@ export default function Workspace() {
                 m.parts
                   ? <p className="text-sm">Render data is ready: {m.parts.parts.length} parts, {m.parts.assembly.length} listens. <Link className="underline" to={`/m/${m.id}/render`}>Go to rendering</Link>.</p>
                   : <pre className="max-h-96 overflow-auto rounded bg-paper p-3 text-xs">{out}</pre>
+              )}
+              {busy !== stage.id && out && stage.kind === 'cards' && (
+                m.reviewSets ? <ReviewSets data={m.reviewSets} /> : <pre className="max-h-96 overflow-auto rounded bg-paper p-3 text-xs">{out}</pre>
               )}
               {busy !== stage.id && out && (stage.kind === 'doc' || stage.kind === 'editor') && <Markdown text={out} />}
             </div>

@@ -56,6 +56,15 @@ export function parsePerformance(text) {
   return { parts: data.parts, assembly: data.assembly || [] };
 }
 
+// Review-cards reply -> [{ topic, title, cards, retry }]. Same JSON tolerance as the performance pass.
+export function parseReviewSets(text) {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const raw = fenced ? fenced[1] : text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
+  const data = JSON.parse(raw);
+  if (!Array.isArray(data.reviewSets)) throw new Error('The reply has no "reviewSets" list.');
+  return { sets: data.reviewSets, missing: data.missing || [] };
+}
+
 // Split a segment's lines into requests of at most `limit` characters (ElevenLabs guidance: 2,000).
 export function chunkLines(lines, limit = 1900) {
   const chunks = [];

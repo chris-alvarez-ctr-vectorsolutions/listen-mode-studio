@@ -42,7 +42,7 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 | Normal (Base) | The default version of a topic | Plays unless swapped |
 | Harder (Test-up) | A harder scene with the same facts | **Replaces** Normal for learners who know it but can't skip it |
 | Add-on (Reinforced) | Extra story | **Inserted** into Normal, just before that part's ending, for learners who aren't convinced yet |
-| Quick take (Remedial) | A short fix | A separate asset, played after the checks for a missed question. Never part of the listen. |
+| Review set (Remedial) | A few fact cards and a retry question | Shown on screen after the checks for a missed Know question. Not audio, and never part of the listen. |
 
 **The master script** is the longest path: every topic with every add-on inserted. Every other listen is the master with parts removed or swapped.
 
@@ -55,7 +55,7 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 5. Harder versions stand alone. The learner never heard Normal.
 6. Add-ons sit just before the part's ending line and pick up mid-story without re-introducing anyone.
 7. Each part's ending is its own segment, so an add-on can slot in front of it.
-8. Quick takes get their own short open and close line and never refer to the listen.
+8. Review sets stand alone. Each card rests on a ledger claim and never refers to the listen, the hosts or a character.
 
 ## 5. Fact rules (these override everything else)
 
@@ -115,7 +115,7 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 | Topic part, Normal or Harder | 200 to 280 | 1:30 to 2:00 |
 | Add-on | 40 to 100 | 20 to 45 seconds |
 | Close | 20 to 50 | 10 to 20 seconds |
-| Quick take | 120 to 180 | about 1 minute |
+| Review set (per Know topic) | 3 to 5 cards, each 1 to 2 sentences on the back | read on screen |
 
 Runtime = words / 140, plus holds, plus about 3 seconds per sting.
 
