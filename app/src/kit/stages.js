@@ -5,8 +5,9 @@ export const DEFAULT_STAGES = [
     id: 'ledger', n: 2, title: 'Claims ledger', kind: 'doc', skippable: true,
     gate: 'An SME signs the ledger before anything is rendered for real.',
     prompt: `From the source content for {module} (the seed text and any attached source files), build a claims ledger as a table:
-ID (C01, C02...) | the claim in one plain sentence | source (learning objective and slide or reference) | flag.
-Flag any claim with a scope limit, a conflict with another claim, or a claim the source content doesn't support.
+ID (C01, C02...) | the claim in one plain sentence | source (learning objective and slide or reference) | flag | proposed fix.
+Flag any claim with a scope limit, a conflict with another claim, or a claim the source content doesn't support. Leave the flag empty for claims with no problem.
+For each flagged claim, write the proposed fix as a replacement claim in one plain sentence that the source content fully supports, or "needs SME: " followed by the question an SME must answer. Never invent a fact to resolve a flag. Leave the proposed fix empty on unflagged claims.
 Don't merge, generalize or add claims. Then list any claim from other attached material (prior scripts, decks) that the source content doesn't support, marked FLAG.
 Stop when done.`,
   },

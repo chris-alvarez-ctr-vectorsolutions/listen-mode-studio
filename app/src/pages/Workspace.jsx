@@ -5,11 +5,12 @@ import { addRuleToKit, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
 import { EXAMPLE_FIELDS, SEED_FIELDS, composeSeed, missingRequired, seedFieldsOf } from '../lib/seed.js';
 import { parsePerformance, parseReviewSets } from '../lib/script.js';
-import { parseLedger } from '../lib/claims.js';
+import { dropLedgerRow, editLedgerRow, parseLedger, parseLedgerRows } from '../lib/claims.js';
 import { readFileText } from '../lib/download.js';
 import Markdown from '../components/Markdown.jsx';
 import ScriptReview from '../components/ScriptReview.jsx';
 import ReviewSets from '../components/ReviewSets.jsx';
+import LedgerReview from '../components/LedgerReview.jsx';
 
 function seedBlock(m) {
   const sources = m.sources.map(s => `### ${s.name}\n\n${s.text}`).join('\n\n');
@@ -26,6 +27,7 @@ export default function Workspace() {
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
   const [fixes, setFixes] = useState('');
+  const [suggestingId, setSuggestingId] = useState(null);
   const abort = useRef(null);
   const mRef = useRef(null);
   const setBoth = next => { mRef.current = next; setM(next); };
@@ -81,6 +83,12 @@ export default function Workspace() {
         thread: [...thread, { role: 'assistant', content: reply }],
         stages: { ...cur().stages, [stage.id]: { status: 'ready', output: reply, threadStart: start } },
       };
+      if (stage.id === 'ledger') {
+        // A new ledger invalidates per-claim decisions, except ones still waiting on an SME.
+        patch.claimMeta = Object.fromEntries(Object.entries(cur().claimMeta || {})
+          .filter(([, v]) => userText && (v.decision === 'own' || v.decision === 'sme'))
+          .map(([id, v]) => [id, { decision: v.decision, note: v.note }]));
+      }
       if (stage.kind === 'script') patch.currentScript = reply;
       if (stage.kind === 'json') {
         try { patch.parts = parsePerformance(reply); }
@@ -96,14 +104,82 @@ export default function Workspace() {
     } finally { setBusy(null); setLive(''); }
   }
 
-  const approve = stage => update({ stages: { ...cur().stages, [stage.id]: { ...st(stage.id), status: 'approved' } } });
+  const approve = stage => {
+    if (stage.id === 'ledger') {
+      const open = parseLedgerRows(st('ledger').output).filter(r => r.flag && !(cur().claimMeta || {})[r.id]?.decision).length;
+      if (open && !confirm(`${open} flagged claim${open > 1 ? 's have' : ' has'} no decision yet. Approve anyway?`)) return;
+    }
+    return update({ stages: { ...cur().stages, [stage.id]: { ...st(stage.id), status: 'approved' } } });
+  };
   const skip = stage => update({ stages: { ...cur().stages, [stage.id]: { status: 'skipped', output: '' } } });
 
   function revise(stage) {
+    const claimNotes = stage.id === 'ledger'
+      ? Object.entries(claimMeta).filter(([, v]) => v.note && v.decision !== 'sme' && v.decision !== 'drop').map(([id, v]) => `${id}: ${v.note}`).join('\n')
+      : '';
     const lines = m.notes.map((n, i) => `${i + 1}. In ${n.asset || 'the script'}, ${n.speaker}: "${n.text}"\n   Note: ${n.note}${n.better ? `\n   Better: ${n.better}` : ''}`).join('\n');
-    const msg = `Revise the ${stage.title.toLowerCase()} with these notes. Apply each note wherever the same pattern appears, not only on the quoted line. Then output the full revised version in the same format.\n\n${feedback ? `General notes:\n${feedback}\n\n` : ''}${lines ? `Line notes:\n${lines}` : ''}`;
+    const msg = `Revise the ${stage.title.toLowerCase()} with these notes. Apply each note wherever the same pattern appears, not only on the quoted line. Then output the full revised version in the same format.\n\n${feedback ? `General notes:\n${feedback}\n\n` : ''}${lines ? `Line notes:\n${lines}\n\n` : ''}${claimNotes ? `Claim notes:\n${claimNotes}\n\nKeep the flag text of claims already resolved or sent to the SME exactly as it is.` : ''}`;
     setFeedback('');
     update({ notes: [] }).then(() => run(stage, msg));
+  }
+
+  const claimMeta = m.claimMeta || {};
+  const pendingClaims = Object.values(claimMeta).filter(v => v.decision === 'own' || v.decision === 'sme').length;
+  const claimNoteCount = Object.values(claimMeta).filter(v => v.note && v.decision !== 'sme' && v.decision !== 'drop').length;
+
+  // Decisions on a single claim. Wording changes edit the ledger table directly (and the ledger reply in the
+  // conversation, so later stages read the same text); nothing is sent to Claude.
+  function decide(id, action, value) {
+    const c = cur();
+    const ledger = c.stages.ledger;
+    const row = parseLedgerRows(ledger.output).find(r => r.id === id);
+    if (!row && action !== 'reopen') return;
+    const prev = (c.claimMeta || {})[id] || {};
+    let text = ledger.output;
+    let entry = { ...prev };
+    if (action === 'accept') entry = { ...prev, decision: 'accept' };
+    else if (action === 'suggestion') {
+      text = editLedgerRow(text, id, { 1: value, 3: `Resolved with suggested fix (was: ${row.flag})` });
+      entry = { ...prev, decision: 'suggestion' };
+    } else if (action === 'own') {
+      text = editLedgerRow(text, id, { 1: value, 3: `LXD wording, pending SME (was: ${row.flag})` });
+      entry = { ...prev, decision: 'own' };
+    } else if (action === 'sme') {
+      text = editLedgerRow(text, id, { 3: `SME to confirm: ${value}` });
+      entry = { ...prev, decision: 'sme', note: value };
+    } else if (action === 'confirmed') {
+      text = editLedgerRow(text, id, { 3: 'SME confirmed' });
+      entry = { ...prev, decision: 'confirmed' };
+    } else if (action === 'drop') {
+      text = dropLedgerRow(text, id);
+      entry = { decision: 'drop', was: row.claim };
+    } else if (action === 'reopen') {
+      const { decision, ...rest } = prev; entry = rest;
+    }
+    const claimMetaNext = { ...(c.claimMeta || {}), [id]: entry };
+    const thread = [...c.thread];
+    const i = (ledger.threadStart ?? -2) + 1;
+    if (thread[i]?.role === 'assistant') thread[i] = { ...thread[i], content: text };
+    const pending = Object.values(claimMetaNext).filter(v => v.decision === 'own' || v.decision === 'sme').length;
+    return update({
+      thread, claimMeta: claimMetaNext,
+      stages: { ...c.stages, ledger: { ...ledger, output: text } },
+      ...(pending ? { ledgerSigned: false } : {}),
+    });
+  }
+  const noteClaim = (id, note) => update({ claimMeta: { ...(cur().claimMeta || {}), [id]: { ...(cur().claimMeta || {})[id], note } } });
+
+  async function suggestFix(id) {
+    setError(''); setSuggestingId(id);
+    try {
+      const c = cur();
+      const ledger = c.stages.ledger;
+      const thread = c.thread.slice(0, (ledger.threadStart ?? 0) + 2);
+      const ask = `For ${id} only: propose a replacement claim in one plain sentence that the source content fully supports, or start with "needs SME: " and give the question an SME must answer. Never invent a fact. Reply with that one line and nothing else.`;
+      const reply = (await callClaude({ system: systemPrompt(loadKit()), messages: [...thread, { role: 'user', content: ask }] })).trim().replace(/^["“]|["”]$/g, '');
+      await update({ claimMeta: { ...(cur().claimMeta || {}), [id]: { ...(cur().claimMeta || {})[id], suggestion: reply } } });
+    } catch (e) { setError(e.message); }
+    finally { setSuggestingId(null); }
   }
 
   async function applyFixes() {
@@ -129,6 +205,7 @@ export default function Workspace() {
 
   const stage = stages.find(s => s.id === active);
   const out = stage ? st(stage.id).output : '';
+  const ledgerRows = stage?.id === 'ledger' && out ? parseLedgerRows(out) : [];
 
   return (
     <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
@@ -182,8 +259,9 @@ export default function Workspace() {
               </ul>
             </div>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={m.ledgerSigned} onChange={e => update({ ledgerSigned: e.target.checked })} />
+              <input type="checkbox" checked={m.ledgerSigned} disabled={pendingClaims > 0} onChange={e => update({ ledgerSigned: e.target.checked })} />
               The SME has signed the claims ledger. Until this is checked, audio files are marked DRAFT.
+              {pendingClaims > 0 && <span className="text-amber-900"> {pendingClaims} claim{pendingClaims > 1 ? 's are' : ' is'} waiting on the SME.</span>}
             </label>
             <div className="flex gap-3">
               <button className="btn-primary" onClick={continueToLedger}>Continue to the claims ledger</button>
@@ -223,7 +301,11 @@ export default function Workspace() {
               {busy !== stage.id && out && stage.kind === 'cards' && (
                 m.reviewSets ? <ReviewSets data={m.reviewSets} /> : <pre className="max-h-96 overflow-auto rounded bg-paper p-3 text-xs">{out}</pre>
               )}
-              {busy !== stage.id && out && (stage.kind === 'doc' || stage.kind === 'editor') && <Markdown text={out} />}
+              {busy !== stage.id && out && stage.id === 'ledger' && ledgerRows.length > 0 && (
+                <LedgerReview rows={ledgerRows} meta={claimMeta} suggestingId={suggestingId} disabled={!!busy || !!suggestingId}
+                  onAction={decide} onSuggest={suggestFix} onNote={noteClaim} />
+              )}
+              {busy !== stage.id && out && (stage.kind === 'editor' || (stage.kind === 'doc' && !(stage.id === 'ledger' && ledgerRows.length > 0))) && <Markdown text={out} />}
             </div>
 
             {busy !== stage.id && out && stage.kind === 'editor' && (
@@ -242,8 +324,8 @@ export default function Workspace() {
                 <label className="label" htmlFor="fb">Notes for a revision</label>
                 <textarea id="fb" className="field h-24" placeholder={stage.kind === 'script' ? 'General notes. Click any line above to note that line.' : 'What should change?'} value={feedback} onChange={e => setFeedback(e.target.value)} />
                 <div className="flex flex-wrap gap-2">
-                  <button className="btn" disabled={(!feedback.trim() && !m.notes.length) || !!busy} onClick={() => revise(stage)}>
-                    Revise{m.notes.length ? ` with ${m.notes.length} line note${m.notes.length > 1 ? 's' : ''}` : ''}
+                  <button className="btn" disabled={(!feedback.trim() && !m.notes.length && !claimNoteCount) || !!busy} onClick={() => revise(stage)}>
+                    Revise{m.notes.length ? ` with ${m.notes.length} line note${m.notes.length > 1 ? 's' : ''}` : claimNoteCount ? ` with ${claimNoteCount} claim note${claimNoteCount > 1 ? 's' : ''}` : ''}
                   </button>
                   <button className="btn-primary" disabled={!!busy || st(stage.id).status === 'approved'} onClick={() => approve(stage)}>
                     {st(stage.id).status === 'approved' ? 'Approved' : 'Approve and continue'}
