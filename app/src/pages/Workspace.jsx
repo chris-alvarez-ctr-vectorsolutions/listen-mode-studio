@@ -11,7 +11,12 @@ import { readFileText } from '../lib/download.js';
 import Markdown from '../components/Markdown.jsx';
 import ScriptReview from '../components/ScriptReview.jsx';
 import PathwayEditor from '../components/PathwayEditor.jsx';
+import SectionReview from '../components/SectionReview.jsx';
+import FixReview from '../components/FixReview.jsx';
+import { splitFixItems, splitReport } from '../lib/sections.js';
 import LedgerReview from '../components/LedgerReview.jsx';
+
+const Spinner = () => <span aria-hidden="true" className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-ink border-t-transparent" />;
 
 function seedBlock(m) {
   const sources = m.sources.map(s => `### ${s.name}\n\n${s.text}`).join('\n\n');
@@ -72,7 +77,7 @@ export default function Workspace() {
       if (stage.kind === 'editor') {
         const content = `${seedBlock(mod)}\n\n${pathwayBlock(mod.objectives)}\n\n## Script to review\n\n${mod.currentScript}\n\n${prompt}`;
         reply = await callClaude({ system, messages: [{ role: 'user', content }], onText: setLive, signal: abort.current.signal });
-        await update({ stages: { ...cur().stages, editor: { status: 'ready', output: reply } } });
+        await update({ stages: { ...cur().stages, editor: { status: 'ready', output: reply } }, itemState: { ...(cur().itemState || {}), editor: {} } });
         return;
       }
       // "Run again" replaces the stage's earlier exchange (and rebuilds the seed if it is the first one);
@@ -86,6 +91,7 @@ export default function Workspace() {
       const patch = {
         thread: [...thread, { role: 'assistant', content: reply }],
         stages: { ...cur().stages, [stage.id]: { status: 'ready', output: reply, threadStart: start } },
+        itemState: { ...(cur().itemState || {}), [stage.id]: {} },
       };
       if (stage.id === 'ledger') {
         // A new ledger invalidates per-claim decisions, except ones still waiting on an SME.
@@ -117,12 +123,15 @@ export default function Workspace() {
     const claimNotes = stage.id === 'ledger'
       ? Object.entries(claimMeta).filter(([, v]) => v.note && v.decision !== 'sme' && v.decision !== 'drop').map(([id, v]) => `${id}: ${v.note}`).join('\n')
       : '';
+    const secNotes = Object.entries(itemState[stage.id] || {}).filter(([, v]) => v.note?.trim()).map(([k, v]) => `${k.replace(/^\d+:/, '')}: ${v.note.trim()}`).join('\n');
     const lines = m.notes.map((n, i) => `${i + 1}. In ${n.asset || 'the script'}, ${n.speaker}: "${n.text}"\n   Note: ${n.note}${n.better ? `\n   Better: ${n.better}` : ''}`).join('\n');
-    const msg = `Revise the ${stage.title.toLowerCase()} with these notes. Apply each note wherever the same pattern appears, not only on the quoted line. Then output the full revised version in the same format.\n\n${feedback ? `General notes:\n${feedback}\n\n` : ''}${lines ? `Line notes:\n${lines}\n\n` : ''}${claimNotes ? `Claim notes:\n${claimNotes}\n\nKeep the flag text of claims already resolved or sent to the SME exactly as it is.` : ''}`;
+    const msg = `Revise the ${stage.title.toLowerCase()} with these notes. Apply each note wherever the same pattern appears, not only on the quoted line. Then output the full revised version in the same format.\n\n${feedback ? `General notes:\n${feedback}\n\n` : ''}${secNotes ? `Section notes:\n${secNotes}\n\n` : ''}${lines ? `Line notes:\n${lines}\n\n` : ''}${claimNotes ? `Claim notes:\n${claimNotes}\n\nKeep the flag text of claims already resolved or sent to the SME exactly as it is.` : ''}`;
     setFeedback('');
     update({ notes: [] }).then(() => run(stage, msg));
   }
 
+  const itemState = m.itemState || {};
+  const setItem = (sid, key, patch) => update({ itemState: { ...(cur().itemState || {}), [sid]: { ...((cur().itemState || {})[sid] || {}), [key]: patch } } });
   const claimMeta = m.claimMeta || {};
   const pendingClaims = Object.values(claimMeta).filter(v => v.decision === 'own' || v.decision === 'sme').length;
   const claimNoteCount = Object.values(claimMeta).filter(v => v.note && v.decision !== 'sme' && v.decision !== 'drop').length;
@@ -217,9 +226,9 @@ Don't invent objectives. Reply with the JSON array only.`;
     finally { setReadingObjectives(false); }
   }
 
-  async function applyFixes() {
+  async function applyFixes(text) {
     const draft = stages.find(s => s.id === 'validity');
-    await run(draft, `Apply these fixes from the editor review to the latest script. Change nothing else. Then output the full revised script in the same format.\n\n${fixes}`);
+    await run(draft, `Apply these fixes from the editor review to the latest script. Change nothing else. Then output the full revised script in the same format.\n\n${text}`);
     setFixes('');
     const s2 = cur().stages;
     await update({ stages: { ...s2, validity: { ...s2.validity, status: 'approved' }, editor: { ...s2.editor, status: 'approved' } } });
@@ -240,6 +249,14 @@ Don't invent objectives. Reply with the JSON array only.`;
 
   const stage = stages.find(s => s.id === active);
   const out = stage ? st(stage.id).output : '';
+  const editorItems = stage?.kind === 'editor' && out ? splitFixItems(out)?.items || [] : [];
+  const chosen = editorItems.filter(it => itemState.editor?.[it.n]?.decision === 'apply');
+  const applyCount = chosen.length;
+  const fixText = [
+    ...chosen.map(it => `${it.n}. ${it.text}${itemState.editor[it.n].edit?.trim() ? `\n   Change to the fix: ${itemState.editor[it.n].edit.trim()}` : ''}`),
+    fixes.trim(),
+  ].filter(Boolean).join('\n\n');
+  const sectionNoteCount = stage ? Object.values(itemState[stage.id] || {}).filter(v => v.note?.trim()).length : 0;
   const ledgerRows = stage?.id === 'ledger' && out ? parseLedgerRows(out) : [];
 
   return (
@@ -323,13 +340,30 @@ Don't invent objectives. Reply with the JSON array only.`;
             </div>
 
             <div className="mt-6">
-              {busy === stage.id && <div className="whitespace-pre-wrap font-script text-[15px] leading-relaxed text-muted">{live || 'Working…'}</div>}
-              {busy !== stage.id && out && stage.kind === 'script' && (
-                <ScriptReview text={out} notes={m.notes}
-                  onAddNote={n => update({ notes: [...m.notes, n] })}
-                  onRemoveNote={key => update({ notes: m.notes.filter(n => n.key !== key) })}
-                  onSaveRule={saveRule} />
+              {busy === stage.id && (
+                <div role="status">
+                  <p className="mb-2 flex items-center gap-2 text-sm text-muted"><Spinner />Working…</p>
+                  <div className="whitespace-pre-wrap font-script text-[15px] leading-relaxed text-muted">{live}</div>
+                </div>
               )}
+              {busy && busy !== stage.id && (
+                <div role="status" className="mb-4 rounded-md border border-rule bg-paper p-3">
+                  <p className="flex items-center gap-2 text-sm"><Spinner />Working on the {stages.find(s => s.id === busy)?.title.toLowerCase()}… This can take a minute.</p>
+                  {live && <div className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap font-script text-sm text-muted">{live}</div>}
+                </div>
+              )}
+              {busy !== stage.id && out && stage.kind === 'script' && (() => {
+                const { report, script } = stage.id === 'validity' ? splitReport(out) : { report: '', script: out };
+                return (
+                  <div className="space-y-6">
+                    {report && <SectionReview text={report} state={itemState[stage.id]} disabled={!!busy} onChange={(k, v) => setItem(stage.id, k, v)} />}
+                    <ScriptReview text={script} notes={m.notes}
+                      onAddNote={n => update({ notes: [...m.notes, n] })}
+                      onRemoveNote={key => update({ notes: m.notes.filter(n => n.key !== key) })}
+                      onSaveRule={saveRule} />
+                  </div>
+                );
+              })()}
               {busy !== stage.id && out && stage.kind === 'json' && (
                 m.parts
                   ? <div className="space-y-2 text-sm">
@@ -346,17 +380,23 @@ Don't invent objectives. Reply with the JSON array only.`;
                 <LedgerReview rows={ledgerRows} meta={claimMeta} suggestingId={suggestingId} disabled={!!busy || !!suggestingId}
                   onAction={decide} onSuggest={suggestFix} onNote={noteClaim} />
               )}
-              {busy !== stage.id && out && (stage.kind === 'editor' || (stage.kind === 'doc' && !(stage.id === 'ledger' && ledgerRows.length > 0))) && <Markdown text={out} />}
+              {busy !== stage.id && out && stage.kind === 'editor' && (
+                <FixReview text={out} state={itemState.editor} disabled={!!busy} onChange={(n, v) => setItem('editor', n, v)} />
+              )}
+              {busy !== stage.id && out && stage.kind === 'doc' && !(stage.id === 'ledger' && ledgerRows.length > 0) && (
+                <SectionReview text={out} state={itemState[stage.id]} disabled={!!busy} onChange={(k, v) => setItem(stage.id, k, v)} />
+              )}
             </div>
 
             {busy !== stage.id && out && stage.kind === 'editor' && (
               <div className="mt-6 space-y-2 border-t border-rule pt-4">
-                <label className="label" htmlFor="fixes">Fixes to apply</label>
-                <textarea id="fixes" className="field h-28" placeholder="Paste the fixes you agree with, or list their numbers, like 1, 3 and 4." value={fixes} onChange={e => setFixes(e.target.value)} />
+                <label className="label" htmlFor="fixes">Extra notes (optional)</label>
+                <textarea id="fixes" className="field h-20" placeholder="Anything else to change, or paste fixes from elsewhere." value={fixes} onChange={e => setFixes(e.target.value)} />
                 <div className="flex gap-2">
-                  <button className="btn-primary" disabled={!fixes.trim() || !!busy} onClick={applyFixes}>Apply fixes to the script</button>
+                  <button className="btn-primary" disabled={!fixText.trim() || !!busy} onClick={() => applyFixes(fixText)}>{busy ? 'Applying…' : `Apply ${applyCount ? `${applyCount} fix${applyCount > 1 ? 'es' : ''}` : 'fixes'} to the script`}</button>
                   <button className="btn" disabled={!!busy || st('editor').status === 'approved'} onClick={() => approve(stage)}>Continue without changes</button>
                 </div>
+                {st('editor').status === 'approved' && !busy && <p className="text-sm text-muted">Done. <button className="underline" onClick={() => setActive('validity')}>See the corrected script in the Validity pass</button>.</p>}
               </div>
             )}
 
@@ -365,8 +405,8 @@ Don't invent objectives. Reply with the JSON array only.`;
                 <label className="label" htmlFor="fb">Notes for a revision</label>
                 <textarea id="fb" className="field h-24" placeholder={stage.kind === 'script' ? 'General notes. Click any line above to note that line.' : 'What should change?'} value={feedback} onChange={e => setFeedback(e.target.value)} />
                 <div className="flex flex-wrap gap-2">
-                  <button className="btn" disabled={(!feedback.trim() && !m.notes.length && !claimNoteCount) || !!busy} onClick={() => revise(stage)}>
-                    Revise{m.notes.length ? ` with ${m.notes.length} line note${m.notes.length > 1 ? 's' : ''}` : claimNoteCount ? ` with ${claimNoteCount} claim note${claimNoteCount > 1 ? 's' : ''}` : ''}
+                  <button className="btn" disabled={(!feedback.trim() && !m.notes.length && !claimNoteCount && !sectionNoteCount) || !!busy} onClick={() => revise(stage)}>
+                    Revise{m.notes.length ? ` with ${m.notes.length} line note${m.notes.length > 1 ? 's' : ''}` : sectionNoteCount ? ` with ${sectionNoteCount} section note${sectionNoteCount > 1 ? 's' : ''}` : claimNoteCount ? ` with ${claimNoteCount} claim note${claimNoteCount > 1 ? 's' : ''}` : ''}
                   </button>
                   <button className="btn-primary" disabled={!!busy || st(stage.id).status === 'approved'} onClick={() => approve(stage)}>
                     {st(stage.id).status === 'approved' ? 'Approved' : 'Approve and continue'}
