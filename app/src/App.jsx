@@ -15,7 +15,7 @@ export default function App() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
           <NavLink to="/" className="flex items-center gap-2 font-semibold">
             <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-full bg-onair" />
-            Module Audio Studio
+            ListenMode Studio
           </NavLink>
           <nav className="flex gap-1">
             <NavLink to="/" end className={nav}>Modules</NavLink>

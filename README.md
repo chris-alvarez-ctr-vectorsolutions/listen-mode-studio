@@ -1,4 +1,4 @@
-# Module Audio Studio
+# ListenMode Studio
 
 Turns a rough module outline into rendered two-host training audio. An LXD seeds a module, approves each stage, notes lines that don't work, and renders the result through ElevenLabs. No prompt writing, and no backend server.
 
