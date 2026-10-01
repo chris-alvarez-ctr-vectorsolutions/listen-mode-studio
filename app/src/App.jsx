@@ -2,6 +2,7 @@ import { NavLink, Route, Routes } from 'react-router-dom';
 import Modules from './pages/Modules.jsx';
 import Workspace from './pages/Workspace.jsx';
 import Render from './pages/Render.jsx';
+import Impact from './pages/Impact.jsx';
 import Kit from './pages/Kit.jsx';
 import Settings from './pages/Settings.jsx';
 
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/" element={<Modules />} />
           <Route path="/m/:id" element={<Workspace />} />
           <Route path="/m/:id/render" element={<Render />} />
+          <Route path="/m/:id/impact" element={<Impact />} />
           <Route path="/kit" element={<Kit />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

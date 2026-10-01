@@ -55,10 +55,11 @@ Stop after the list.`,
     gate: 'Ready to render.',
     prompt: `Run the performance pass on the final script in this conversation, following section 9 of the production guide. Don't change any wording.
 Return ONLY a JSON object, with no prose before or after it, in exactly this shape:
-{"parts":[{"id":"01-k1-normal","title":"The blade at the bench","segments":[{"id":"01-k1-normal-a","flag":null,"pauseAfter":0,"lines":[{"speaker":"DANA","text":"..."},{"speaker":"RAY","text":"[warmly] ..."}]}]}],
+{"parts":[{"id":"01-k1-normal","title":"The blade at the bench","claims":["C01","C03"],"segments":[{"id":"01-k1-normal-a","flag":null,"pauseAfter":0,"lines":[{"speaker":"DANA","text":"..."},{"speaker":"RAY","text":"[warmly] ..."}]}]}],
  "assembly":[{"name":"Master","parts":["00-open","01-k1-normal"]}]}
 Rules:
 - Every asset is a part, in master-script order, then Harder versions.
+- "claims" on each part lists every ledger claim ID its lines rest on, taken from the trace table (empty for the open and close if they carry none). Add-ons list their own.
 - Speaker names in capitals, exactly as in the script.
 - Delivery tags only from each voice's palette, two to four per part, where the meaning or emotion shifts. CAPS on one or two words per part. Spell numbers and initialisms as spoken.
 - Split segments at every hold, add-on seam and part ending. pauseAfter is the seconds of silence after the segment: 3 for a judgment hold, 2 for an emotional hold, 0 otherwise.

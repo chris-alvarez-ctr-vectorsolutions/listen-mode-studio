@@ -8,6 +8,7 @@ import { blobToSamples, decode, join, wavBlob } from '../lib/audio.js';
 import { download, readFileText } from '../lib/download.js';
 import { speakerColor } from '../components/speaker.js';
 import { buildManifest, fileNameFor } from '../lib/manifest.js';
+import { buildImpact, parseLedger, snapshot } from '../lib/claims.js';
 
 export default function Render() {
   const { id } = useParams();
@@ -33,6 +34,7 @@ export default function Render() {
   const prefix = m.ledgerSigned ? '' : 'DRAFT-';
   const voiceFor = sp => settings.voices.find(v => v.speaker === sp)?.voiceId;
   const parts = m.parts?.parts || [];
+  const impact = buildImpact(m);
   const missing = speakersIn(parts).filter(sp => !voiceFor(sp));
 
   async function importTxt(e) {
@@ -73,7 +75,8 @@ export default function Render() {
       const blob = wavBlob(join(items));
       await saveAudio(m.id, part.id, blob);
       // The ending is the last segment, so an add-on is spliced in where it starts.
-      const timing = { duration: t, seamAt: marks.length > 1 ? marks[marks.length - 1].start : null, segments: marks };
+      // claims: the text of each cited claim as it reads now, so a later ledger change shows up as stale.
+      const timing = { duration: t, seamAt: marks.length > 1 ? marks[marks.length - 1].start : null, segments: marks, claims: snapshot(part.claims, parseLedger(m.stages?.ledger?.output)) };
       const cur = await getModule(m.id);
       await saveModule({ ...cur, timings: { ...cur.timings, [part.id]: timing } });
       setM(prev => ({ ...prev, timings: { ...prev.timings, [part.id]: timing } }));
@@ -141,6 +144,7 @@ export default function Render() {
         </div>
         <div className="flex flex-wrap gap-2">
           <label className="btn cursor-pointer">Add .txt parts<input type="file" multiple accept=".txt" className="hidden" onChange={importTxt} /></label>
+          <Link className="btn" to={`/m/${m.id}/impact`}>Claim impact</Link>
           <button className="btn" disabled={!parts.length} onClick={downloadAll}>Download all parts</button>
           <button className="btn" disabled={!parts.length} onClick={() => exportPackage()}>Export for prototype</button>
           <button className="btn-onair" disabled={!parts.length || missing.length > 0} onClick={renderAll}>Render all parts</button>
@@ -170,7 +174,7 @@ export default function Render() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <button className="text-left" onClick={() => setOpen(open === p.id ? null : p.id)}>
                   <div className="font-medium">{p.title}</div>
-                  <div className="text-sm text-muted">{p.id} · {lines} lines{flags.length ? ` · waiting on ${flags.join(', ')}` : ''}{m.timings?.[p.id]?.seamAt != null ? ` · seam at ${m.timings[p.id].seamAt.toFixed(1)}s` : ''}</div>
+                  <div className="text-sm text-muted">{p.id} · {lines} lines{flags.length ? ` · waiting on ${flags.join(', ')}` : ''}{impact.partRows.find(r => r.id === p.id)?.stale.length ? ' · claim changed, render again' : ''}{m.timings?.[p.id]?.seamAt != null ? ` · seam at ${m.timings[p.id].seamAt.toFixed(1)}s` : ''}</div>
                 </button>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-muted">{status[p.id] || ''}</span>

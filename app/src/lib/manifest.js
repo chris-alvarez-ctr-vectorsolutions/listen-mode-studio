@@ -1,3 +1,5 @@
+import { buildImpact } from './claims.js';
+
 // Turns a module's rendered parts and recorded timings into the manifest the listen prototype plays from.
 const VARIANTS = ['normal', 'harder', 'addon'];
 
@@ -29,6 +31,9 @@ export function buildManifest(m, settings, rendered) {
   const quickTakes = {};
   const normalIds = {};
   const files = [];
+  const impact = buildImpact(m);
+  for (const p of impact.partRows) if (p.stale.length) warnings.push(`"${p.id}" was rendered before ${p.stale.join(', ')} changed. Render it again.`);
+  for (const s of impact.setRows) if (s.stale.length) warnings.push(`Review cards for "${s.topic}" were written before ${s.stale.join(', ')} changed. Run the Review cards stage again.`);
 
   for (const p of parts) {
     const c = classifyPart(p.id);
@@ -39,6 +44,7 @@ export function buildManifest(m, settings, rendered) {
     const entry = {
       file: `audio/${fileNameFor(m, p.id)}`,
       duration: t ? round(t.duration) : null,
+      claims: p.claims || [],
       segments: p.segments.map(s => ({
         start: round(t?.segments.find(x => x.id === s.id)?.start),
         lines: s.lines,
@@ -71,6 +77,7 @@ export function buildManifest(m, settings, rendered) {
   const manifest = {
     module: m.name,
     draft: !m.ledgerSigned,
+    ledgerVersion: impact.version,
     sampleRate: 44100,
     gapBetweenPartsSec: settings.gapBetweenParts,
     spliceFadeMs: 25,

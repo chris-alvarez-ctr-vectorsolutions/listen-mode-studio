@@ -5,6 +5,7 @@ import { addRuleToKit, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
 import { EXAMPLE_FIELDS, SEED_FIELDS, composeSeed, missingRequired, seedFieldsOf } from '../lib/seed.js';
 import { parsePerformance, parseReviewSets } from '../lib/script.js';
+import { parseLedger } from '../lib/claims.js';
 import { readFileText } from '../lib/download.js';
 import Markdown from '../components/Markdown.jsx';
 import ScriptReview from '../components/ScriptReview.jsx';
@@ -86,7 +87,7 @@ export default function Workspace() {
         catch (e) { setError(`Couldn't read the render data: ${e.message}. Run the stage again.`); }
       }
       if (stage.kind === 'cards') {
-        try { patch.reviewSets = parseReviewSets(reply); }
+        try { patch.reviewSets = { ...parseReviewSets(reply), claimsSeen: parseLedger(cur().stages.ledger?.output) }; }
         catch (e) { setError(`Couldn't read the review cards: ${e.message}. Run the stage again.`); }
       }
       await update(patch);
@@ -147,7 +148,8 @@ export default function Workspace() {
               </li>
             );
           })}
-          <li><Link to={`/m/${m.id}/render`} className={`mt-3 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>10. Render audio</Link></li>
+          <li><Link to={`/m/${m.id}/impact`} className="mt-3 block rounded-md border border-rule px-3 py-2 text-sm text-muted hover:text-ink">Claim impact</Link></li>
+          <li><Link to={`/m/${m.id}/render`} className={`mt-1 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>10. Render audio</Link></li>
         </ol>
       </aside>
 
