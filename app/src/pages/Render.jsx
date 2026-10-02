@@ -8,6 +8,8 @@ import { blobToSamples, decode, join, mixTheme, wavBlob } from '../lib/audio.js'
 import { THEME_FOR, themeBuffer } from '../lib/theme.js';
 import { download, readFileText } from '../lib/download.js';
 import { speakerColor } from '../components/speaker.js';
+import Composer from '../components/Composer.jsx';
+import { planParts } from '../lib/pathways.js';
 import { combineCues, cuesFromResponse, toVtt } from '../lib/captions.js';
 import { buildManifest, classifyPart, fileNameFor } from '../lib/manifest.js';
 import { buildImpact, parseLedger, snapshot } from '../lib/claims.js';
@@ -162,19 +164,71 @@ export default function Render() {
     download(`${prefix}${m.name} parts.zip`, await zip.generateAsync({ type: 'blob' }));
   }
 
+  const ready = !!(m.objectives || []).filter(o => o.id).length && planParts(m.objectives).every(p => urls[p.id]);
+
+  // One row per part, used by the learner view and the plain list alike. st: { chip, dim, active } from the Composer.
+  function partRow(p, st = {}) {
+    const flags = p.segments.filter(s => s.flag).map(s => s.flag);
+    const lines = p.segments.reduce((k, s) => k + s.lines.length, 0);
+    const stale = impact.partRows.find(r => r.id === p.id)?.stale.length;
+    const t = m.timings?.[p.id];
+    const rendered = !!urls[p.id];
+    return (
+      <div className={`px-3 py-2 ${st.dim ? 'opacity-50' : ''} ${st.active ? 'bg-orange-50' : ''}`}>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          <button className="min-w-0 text-left" aria-expanded={open === p.id} onClick={() => setOpen(open === p.id ? null : p.id)}>
+            <span className="text-sm font-medium">{p.title}</span>
+            {st.chip && <span className="ml-2 rounded border border-rule px-1.5 py-0.5 text-xs text-muted">{st.chip}</span>}
+            <span className="block truncate text-xs text-muted">
+              {p.id}{t?.duration ? ` · ${Math.floor(t.duration / 60)}:${String(Math.round(t.duration % 60)).padStart(2, '0')}` : ''}{flags.length ? ` · waiting on ${flags.join(', ')}` : ''}{stale ? ' · claim changed, render again' : ''}{status[p.id] ? ` · ${status[p.id]}` : ''}
+            </span>
+          </button>
+          <div className="flex items-center gap-2">
+            {rendered && <audio controls src={urls[p.id]} className="h-8 w-56 max-w-full" />}
+            {!rendered && <button className="btn !py-1" disabled={missing.length > 0} onClick={() => renderPart(p)}>Render</button>}
+          </div>
+        </div>
+        {open === p.id && (
+          <div className="mt-2 space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {rendered && <button className="btn !py-1" disabled={missing.length > 0} onClick={() => renderPart(p)}>Render again</button>}
+              {rendered && <a className="btn !py-1" href={urls[p.id]} download={`${prefix}${p.id}.wav`}>Download</a>}
+              {t?.cues?.length > 0 && <button className="btn !py-1" onClick={() => download(`${prefix}${p.id}.vtt`, toVtt(t.cues), 'text/vtt')}>Captions</button>}
+              <span className="self-center text-xs text-muted">{lines} lines{t?.seamAt != null ? ` · seam at ${t.seamAt.toFixed(1)}s` : ''}</span>
+            </div>
+            <div className="space-y-3 font-script text-[15px] leading-relaxed">
+              {p.segments.map(s => (
+                <div key={s.id} className={s.flag ? 'rounded border border-amber-300 bg-amber-50 p-2' : ''}>
+                  {s.flag && <div className="font-ui text-xs text-muted">Waiting on {s.flag}</div>}
+                  {s.lines.map((l, i) => <p key={i}><span className={`mr-2 font-ui text-xs font-semibold ${speakerColor(l.speaker)}`}>{l.speaker}</span>{l.text}</p>)}
+                  {s.pauseAfter ? <p className="font-ui text-xs text-muted">⟨ hold {s.pauseAfter}s ⟩</p> : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto max-w-4xl space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <Link to={`/m/${m.id}`} className="text-sm text-muted hover:text-ink">Back to {m.name}</Link>
           <h1 className="mt-1 text-2xl font-semibold">Render audio</h1>
           {!m.ledgerSigned && <p className="text-sm text-onair">The claims ledger isn't signed yet, so every file is marked DRAFT.</p>}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <label className="btn cursor-pointer">Add .txt parts<input type="file" multiple accept=".txt" className="hidden" onChange={importTxt} /></label>
-          <Link className="btn" to={`/m/${m.id}/impact`}>Claim impact</Link>
-          <button className="btn" disabled={!parts.length} onClick={downloadAll}>Download all parts</button>
-          <button className="btn" disabled={!parts.length} onClick={() => exportPackage()}>Export for prototype</button>
+        <div className="flex items-center gap-2">
+          <details className="relative">
+            <summary className="btn cursor-pointer list-none">More</summary>
+            <div className="absolute right-0 z-20 mt-1 flex w-56 flex-col gap-1 rounded-md border border-rule bg-panel p-2 shadow-md">
+              <label className="btn cursor-pointer">Add .txt parts<input type="file" multiple accept=".txt" className="hidden" onChange={importTxt} /></label>
+              <Link className="btn" to={`/m/${m.id}/impact`}>Claim impact</Link>
+              <button className="btn" disabled={!parts.length} onClick={downloadAll}>Download all parts</button>
+              <button className="btn" disabled={!parts.length} onClick={() => exportPackage()}>Export for prototype</button>
+            </div>
+          </details>
           <button className="btn-onair" disabled={!parts.length || missing.length > 0} onClick={renderAll}>Render all parts</button>
         </div>
       </div>
@@ -193,54 +247,32 @@ export default function Render() {
       )}
       {!parts.length && <p className="rounded-lg border border-rule bg-panel p-6 text-muted">Nothing to render yet. Run the performance pass, or add .txt parts with "NAME: text" lines.</p>}
 
-      <ul className="divide-y divide-rule rounded-lg border border-rule bg-panel">
-        {parts.map(p => {
-          const flags = p.segments.filter(s => s.flag).map(s => s.flag);
-          const lines = p.segments.reduce((k, s) => k + s.lines.length, 0);
-          return (
-            <li key={p.id} className="p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <button className="text-left" onClick={() => setOpen(open === p.id ? null : p.id)}>
-                  <div className="font-medium">{p.title}</div>
-                  <div className="text-sm text-muted">{p.id} · {lines} lines{flags.length ? ` · waiting on ${flags.join(', ')}` : ''}{impact.partRows.find(r => r.id === p.id)?.stale.length ? ' · claim changed, render again' : ''}{m.timings?.[p.id]?.seamAt != null ? ` · seam at ${m.timings[p.id].seamAt.toFixed(1)}s` : ''}</div>
-                </button>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-muted">{status[p.id] || ''}</span>
-                  {urls[p.id] && <audio controls src={urls[p.id]} className="h-9" />}
-                  <button className="btn" disabled={missing.length > 0} onClick={() => renderPart(p)}>{urls[p.id] ? 'Render again' : 'Render'}</button>
-                  {urls[p.id] && <a className="btn" href={urls[p.id]} download={`${prefix}${p.id}.wav`}>Download</a>}
-                  {m.timings?.[p.id]?.cues?.length > 0 && <button className="btn" onClick={() => download(`${prefix}${p.id}.vtt`, toVtt(m.timings[p.id].cues), 'text/vtt')}>Captions</button>}
-                </div>
-              </div>
-              {open === p.id && (
-                <div className="mt-3 space-y-3 font-script text-[15px] leading-relaxed">
-                  {p.segments.map(s => (
-                    <div key={s.id} className={s.flag ? 'rounded border border-amber-300 bg-amber-50 p-2' : ''}>
-                      {s.flag && <div className="font-ui text-xs text-muted">Waiting on {s.flag}</div>}
-                      {s.lines.map((l, i) => <p key={i}><span className={`mr-2 font-ui text-xs font-semibold ${speakerColor(l.speaker)}`}>{l.speaker}</span>{l.text}</p>)}
-                      {s.pauseAfter ? <p className="font-ui text-xs text-muted">⟨ hold {s.pauseAfter}s ⟩</p> : null}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      {ready ? (
+        <Composer objectives={m.objectives} parts={parts} urls={urls} timings={m.timings} gap={settings.gapBetweenParts} rowFor={partRow} />
+      ) : (
+        <>
+          {!!(m.objectives || []).length && parts.length > 0 && <p className="text-sm text-muted">Render every part to try learner paths: set how a learner does on each objective and hear the listen it would get.</p>}
+          <ul className="divide-y divide-rule overflow-hidden rounded-lg border border-rule bg-panel">
+            {parts.map(p => <li key={p.id}>{partRow(p)}</li>)}
+          </ul>
+        </>
+      )}
 
       {!!m.parts?.assembly?.length && (
-        <section className="rounded-lg border border-rule bg-panel p-5">
-          <h2 className="font-semibold">Listens</h2>
-          <p className="text-sm text-muted">Each listen joins its rendered parts in order, with {settings.gapBetweenParts}s between parts where a sting will go.</p>
-          <ul className="mt-3 space-y-2">
-            {m.parts.assembly.map(l => (
-              <li key={l.name} className="flex flex-wrap items-center justify-between gap-3">
-                <div><span className="font-medium">{l.name}</span> <span className="text-sm text-muted">{l.parts.length} parts</span></div>
-                <button className="btn" onClick={() => buildListen(l)}>Build and download</button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <details className="rounded-lg border border-rule bg-panel">
+          <summary className="cursor-pointer px-4 py-3 font-semibold">Exported listens <span className="font-normal text-muted">({m.parts.assembly.length})</span></summary>
+          <div className="border-t border-rule px-4 py-3">
+            <p className="text-sm text-muted">Each listen joins its rendered parts in order, with {settings.gapBetweenParts}s between parts where a sting will go.</p>
+            <ul className="mt-3 space-y-2">
+              {m.parts.assembly.map(l => (
+                <li key={l.name} className="flex flex-wrap items-center justify-between gap-3">
+                  <div><span className="font-medium">{l.name}</span> <span className="text-sm text-muted">{l.parts.length} parts</span></div>
+                  <button className="btn" onClick={() => buildListen(l)}>Build and download</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
       )}
     </div>
   );
