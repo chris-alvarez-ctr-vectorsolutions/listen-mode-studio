@@ -177,7 +177,7 @@ export default function Render() {
       <div className={`px-3 py-2 ${st.dim ? 'opacity-50' : ''} ${st.active ? 'bg-orange-50' : ''}`}>
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           <button className="min-w-0 text-left" aria-expanded={open === p.id} onClick={() => setOpen(open === p.id ? null : p.id)}>
-            <span className="text-sm font-medium">{p.title}</span>
+            <span aria-hidden className="mr-1 text-xs text-muted">{open === p.id ? '▾' : '▸'}</span><span className="text-sm font-medium">{p.title}</span>
             {st.chip && <span className="ml-2 rounded border border-rule px-1.5 py-0.5 text-xs text-muted">{st.chip}</span>}
             <span className="block truncate text-xs text-muted">
               {p.id}{t?.duration ? ` · ${Math.floor(t.duration / 60)}:${String(Math.round(t.duration % 60)).padStart(2, '0')}` : ''}{flags.length ? ` · waiting on ${flags.join(', ')}` : ''}{stale ? ' · claim changed, render again' : ''}{status[p.id] ? ` · ${status[p.id]}` : ''}
@@ -185,13 +185,12 @@ export default function Render() {
           </button>
           <div className="flex items-center gap-2">
             {rendered && <audio controls src={urls[p.id]} className="h-8 w-56 max-w-full" />}
-            {!rendered && <button className="btn !py-1" disabled={missing.length > 0} onClick={() => renderPart(p)}>Render</button>}
+            <button className={`btn !py-1 ${rendered ? '' : 'border-ink'}`} disabled={missing.length > 0} onClick={() => renderPart(p)} title={rendered ? 'Render this part again' : 'Render this part'}>{rendered ? '↻ Re-render' : 'Render'}</button>
           </div>
         </div>
         {open === p.id && (
           <div className="mt-2 space-y-3">
             <div className="flex flex-wrap gap-2">
-              {rendered && <button className="btn !py-1" disabled={missing.length > 0} onClick={() => renderPart(p)}>Render again</button>}
               {rendered && <a className="btn !py-1" href={urls[p.id]} download={`${prefix}${p.id}.wav`}>Download</a>}
               {t?.cues?.length > 0 && <button className="btn !py-1" onClick={() => download(`${prefix}${p.id}.vtt`, toVtt(t.cues), 'text/vtt')}>Captions</button>}
               <span className="self-center text-xs text-muted">{lines} lines{t?.seamAt != null ? ` · seam at ${t.seamAt.toFixed(1)}s` : ''}</span>
@@ -219,17 +218,18 @@ export default function Render() {
           <h1 className="mt-1 text-2xl font-semibold">Render audio</h1>
           {!m.ledgerSigned && <p className="text-sm text-onair">The claims ledger isn't signed yet, so every file is marked DRAFT.</p>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <details className="relative">
             <summary className="btn cursor-pointer list-none">More</summary>
-            <div className="absolute right-0 z-20 mt-1 flex w-56 flex-col gap-1 rounded-md border border-rule bg-panel p-2 shadow-md">
+            <div className="absolute right-0 z-20 mt-1 flex w-48 flex-col gap-1 rounded-md border border-rule bg-panel p-2 shadow-md">
               <label className="btn cursor-pointer">Add .txt parts<input type="file" multiple accept=".txt" className="hidden" onChange={importTxt} /></label>
               <Link className="btn" to={`/m/${m.id}/impact`}>Claim impact</Link>
-              <button className="btn" disabled={!parts.length} onClick={downloadAll}>Download all parts</button>
-              <button className="btn" disabled={!parts.length} onClick={() => exportPackage()}>Export for prototype</button>
             </div>
           </details>
-          <button className="btn-onair" disabled={!parts.length || missing.length > 0} onClick={renderAll}>Render all parts</button>
+          <button className="btn" disabled={!parts.length} onClick={downloadAll}>Download all parts</button>
+          <button className="btn" disabled={!parts.length} onClick={() => exportPackage()}>Export for prototype</button>
+          {/* One primary at a time: Render all until every part exists, then Play in the learner bar. */}
+          <button className={ready ? 'btn' : 'btn-onair'} disabled={!parts.length || missing.length > 0} onClick={renderAll}>{ready ? 'Render all again' : 'Render all parts'}</button>
         </div>
       </div>
 
