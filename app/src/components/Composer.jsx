@@ -23,7 +23,8 @@ export default function Composer({ objectives, parts, urls, timings, gap, rowFor
 
   const L = o => learners[o.id] || defaultLearner(o);
   const set = (o, patch) => setLearners(s => ({ ...s, [o.id]: { ...L(o), ...patch } }));
-  const flow = useMemo(() => compose(objectives, learners), [objectives, learners]);
+  const seamIds = useMemo(() => new Set((parts || []).filter(p => p.seam).map(p => p.id)), [parts]);
+  const flow = useMemo(() => compose(objectives, learners, seamIds), [objectives, learners, seamIds]);
   const plan = useMemo(() => planParts(objectives), [objectives]);
 
   // The loop reads these refs, so a change made mid-playback takes effect at the next part.

@@ -3,6 +3,7 @@
 // Know: pre-check correct/incorrect. Feel: 1-5 agreement. Do: never asked upfront (a choice question can't measure it).
 // Policies: Gate = must pass, remediation repeats. Remediate = one retry in a new modality, then advances.
 // Ask = answer recorded, never blocking. Never skipped = always plays, no test-out, not quizzed.
+import { bridgeId, closerId } from './seams.js';
 import { FEEL_LOW_MAX, MIN_CHAPTERS, inAudio, planListens, planParts, routeOf, topicKey } from './pathways.js';
 
 export const MAX_FAILS = 3;
@@ -37,7 +38,8 @@ export const takesFails = (o, outcome) => outcome === 'plays' && ['Gate', 'Remed
 // -> { items, chapters, signature, matchesListen, routedToArticle }
 // item: { key, kind: 'audio'|'skip'|'step', label, note, partId?, objective?, tag? }. A chapter's key is its objective ID
 // in every state, so changing an answer swaps what sits in that slot instead of re-keying the flow.
-export function compose(objectives, learners) {
+// seamIds: ids of the bridge and closer parts that exist. They are added after the listen is matched, so they never change which listen it is.
+export function compose(objectives, learners, seamIds = null) {
   const objs = objectives || [];
   const plan = planParts(objs);
   const partFor = (o, variant) => plan.find(p => p.topic === topicKey(o.id) && p.variant === variant)?.id;
@@ -102,5 +104,24 @@ export function compose(objectives, learners) {
 
   const signature = items.filter(i => i.kind === 'audio').map(i => i.partId).join(',');
   const named = planListens(objs).find(x => x.parts.join(',') === signature);
+  if (seamIds?.size) addSeams(items, seamIds);
   return { items, chapters, signature, matchesListen: named?.name || null, routedToArticle: !!objs.filter(inAudio).length && chapters < MIN_CHAPTERS };
+}
+
+// Bridges between consecutive audio topics, and a closer in place of the close that fits the last topic heard.
+function addSeams(items, ids) {
+  const topicOf = i => String(i.partId || '').split('-')[1];
+  let prev = null, last = null;
+  for (let n = 0; n < items.length; n++) {
+    const it = items[n];
+    if (it.kind !== 'audio' || !it.objective) continue;
+    const t = topicOf(it);
+    if (prev && ids.has(bridgeId(prev, t))) {
+      items.splice(n, 0, { key: `bridge-${prev}-${t}`, kind: 'audio', label: 'Bridge', partId: bridgeId(prev, t), tag: 'bridge', note: 'Plays between these two topics only.' });
+      n++;
+    }
+    prev = t; last = t;
+  }
+  const close = items.find(i => i.tag === 'close');
+  if (close && last && ids.has(closerId(last))) { close.partId = closerId(last); close.note = 'A closer written for the last topic heard.'; }
 }

@@ -22,9 +22,11 @@ Stop when done.`,
     next: "Beat sheets, where each part gets its outline",
     prompt: `Using the production guide and the module files above, plan the episode for {module}. The pathway table above is fixed: the objectives, their KFD types, the versions each one needs, the part IDs and the listens. Don't add, drop, rename or re-route any of it. If the table is missing, say so and stop.
 This is a one-page blueprint, not the beat sheets. Keep every table cell to one short line. Do not write beat-level detail (holds, constraints, shapes, word counts, sample lines): the next stage does that.
-Use exactly these four sections, each starting with a "##" heading:
+Use exactly these five sections, each starting with a "##" heading:
+## Anchor
+One line: the single setting or object (a property tray, a booking counter) that every part, including Test-up and Reinforced versions, will use concretely so the parts hold together without bridges. It must come from the source content.
 ## Parts
-A table with one row per part in the pathway table, in listen order, plus the open and the close. Columns: Part ID | Objective | Angle (one line: the scenario, story or evidence it will use) | Way in, way out | Claims (ledger IDs). A Test-up is a harder scene with the same facts, and the learner never heard the Base. A Reinforced version gives a Feel topic more weight with the same facts, and replaces the Base. The open's angle names only content from positions that play in every listen.
+A table with one row per part in the pathway table, in listen order, plus the open and the close. Columns: Part ID | Objective | Angle (one line: the scenario, story or evidence it will use) | Way in, way out | Claims (ledger IDs). A Test-up is a harder scene with the same facts, and the learner never heard the Base. A Reinforced version gives a Feel topic more weight with the same facts, and replaces the Base. The open's angle names the sharpest line (a story quote or striking detail) from a position that plays in every listen, never an agenda.
 ## Plays in every listen
 One or two lines: which positions play in every listen, and what the open may promise.
 ## Listens
@@ -40,7 +42,7 @@ Stop and wait for approval.`,
     check: ["Does each part meet its objective, with a concrete detail worth hearing?", "Does each part take a different shape from the others?", "Are the required claims present, and none invented?"],
     next: "Draft, the first full script",
     prompt: `Write a beat sheet for every asset in the approved plan: the open, every part in the pathway table (Base, Test-up, Reinforced or single version) and the close.
-Use the bullet style of the beats in the voice example. For each, include the shape the part will take (chosen from the pattern library, and different from the other parts), then: the objective, the way in and way out (none repeated within a listen), the one concrete detail, the claim IDs, the emotional target, any judgment hold question, and the word target. If the cast guide gives the expert a background, the open's beat sheet also covers the host intro that follows the open in the same asset: quote the background text it will use, the host states one specific fact from it and asks a short question that fits it (the expert is a co-host who already introduced himself, never a guest), the expert answers in two or three sentences using only that text, and the host moves on, without naming any topic part. If the cast guide gives no background, write no host intro and note that in the beat sheet. Never invent a background or a role question. No dialogue yet.
+Use the bullet style of the beats in the voice example. In every part, name how the anchor shows up, and, in a Know part, which turns are the host reacting, setting up a scenario or correcting a common assumption, not only asking. For each, include the shape the part will take (chosen from the pattern library, and different from the other parts), then: the objective, the way in and way out (none repeated within a listen), the one concrete detail, the claim IDs, the emotional target, any judgment hold question, and the word target. If the cast guide gives the expert a background, the open's beat sheet gives its cold-open line and where it comes from, and also covers the host intro that follows the open in the same asset: quote the background text it will use, the host states one specific fact from it and asks a short question that fits it (the expert is a co-host who already introduced himself, never a guest), the expert answers in two or three sentences using only that text, and the host moves on, without naming any topic part. If the cast guide gives no background, write no host intro and note that in the beat sheet. Never invent a background or a role question. No dialogue yet.
 Stop and wait for approval.`,
   },
   {
@@ -52,6 +54,7 @@ Stop and wait for approval.`,
     prompt: `Write every asset from the approved beat sheets. Match the register of the voice example: how the hosts sound and their conversational back-and-forth. Take each part's shape from its beat sheet and the pattern library, not from the voice example's script, and never follow its sequence of moves, questions or lines. Follow the production guide. Never reuse example wording from any kit file.
 Format: a heading per asset (## followed by the part ID from the pathway table and the title, for example "## 01-k1-base · A short plain title"), then one line per speaker as "NAME: text". Cue lines (holds and stings) in ⟨ ⟩ on their own lines. No delivery tags yet.
 Write the Full listen's parts first, in order, then each Test-up and Reinforced version as a separate asset. Every part stands alone, and a Test-up or Reinforced version never relies on the learner having heard the Base.
+Write it as two people talking, following the conversation feel rules: the host reacts and sets up scenarios as well as asking, a reaction rides on the front of the next line, turns vary in length, and no point or figure is repeated. Do not write the close or any bridges between parts: a later stage writes them.
 Before you finish, check each asset against the "Principles from review" and "What not to copy" sections of the voice example, and against the open's "what to avoid" list, and fix anything that matches.
 After the scripts, add a trace table mapping every claim-bearing line to its ledger ID, and list anything you needed that the ledger doesn't contain.`,
   },
@@ -63,6 +66,7 @@ After the scripts, add a trace table mapping every claim-bearing line to its led
     next: "Editor pass, a fresh reviewer",
     prompt: `Run every check in the lint checklist against the latest script in this conversation.
 First, report each check as pass or fail. For each failure, quote the line and give the fix. List any new facts separately under "For the SME", with the line each came from. Treat as new facts any added detail the ledger doesn't state: how a device or process works or looks, a superlative or absolute ("most effective," "always"), what a person knew or was trained on, or a consequence. Flag them, quote the line, and don't cut them silently.
+Count, don't estimate: for the whole listen, list each casual marker ("honestly," "you know," "look," "pretty much") with its turn, any repeated question/answer frame, any point or figure said twice within two turns, any standalone one-word reaction turn, and any fact inside a character's story. Report each as a failure with the fix.
 Then output the full corrected script in the same format as the draft (## headings per asset, "NAME: text" lines, cue lines in ⟨ ⟩), applying every fix that doesn't need a new fact.`,
   },
   {
@@ -72,7 +76,7 @@ Then output the full corrected script in the same format as the draft (## headin
     check: ["Apply the fixes you agree with and skip the rest.", "Edit a fix before applying it if it is close but not right."],
     next: "Performance pass, which adds delivery tags",
     prompt: `You're the showrunner. Review the script below against the production guide, the voice example and the lint checklist. Don't rewrite lines that work. Do flag any part whose shape or lines track the voice example instead of its own beat sheet.
-List only real problems, numbered: the line, what's wrong, and the fix. Check especially: drift from the claims ledger, anything referred to before it's introduced, questions that don't connect, lines that would sound odd in a synthetic voice, and anything repeated across parts.
+List only real problems, numbered: the line, what's wrong, and the fix. Check especially, as a listener: whether the host only feeds questions, turns of the same length, repeated frames ("Even X?"), a point said twice, facts dropped into a story, staged or polite filler ("off mic", thanking each other), an open that reads out an agenda, and drift from the claims ledger, anything referred to before it's introduced, questions that don't connect, lines that would sound odd in a synthetic voice, and anything repeated across parts.
 Stop after the list.`,
   },
   {
@@ -96,5 +100,19 @@ Rules:
 - Put every line tagged [FLAG] in its own segment and set "flag" to its flag ID. Remove the [FLAG] marker from the text.
 - No cue text, stage directions or segment IDs inside any line's text.
 - "assembly" lists every listen in the pathway table with the same names, each as an ordered list of part IDs.`,
+  },
+  {
+    id: 'seams', n: 9, title: 'Seams', kind: 'seams', skippable: true,
+    gate: 'You approve the bridges and the closer.',
+    purpose: "Short bridges between topics and a closer, written once for every pair of topics a learner can move between. Each sits between two parts and is played only when both are in the learner's listen, so the parts stay standalone.",
+    check: ["Does each bridge sound like the same two people moving on, using the shared anchor?", "Do the bridges work whichever version of either topic the learner heard, and when topics between them were skipped?", "Does each closer end on a question for the learner or a callback, not a thank-you?"],
+    next: "Render audio, where the voices record it",
+    prompt: `Write the seams for {module}: bridges between topics and a closer. The pairs and last topics are listed above, computed from the pathway table. Use them exactly: don't add, drop or rename any.
+Bridge, for each pair (from, to): one to three lines, under 40 words, in the voices of the show. It closes the topic just heard and opens the next, using the shared anchor from the episode plan. It must work whichever version (Base, Test-up or Reinforced) of either topic the learner heard, and when topics between the two were skipped, so never name a skipped topic and never say what the learner learned. State no new facts: say a fact only if it is a ledger claim, and prefer none. The next part still opens with its own signpost, so a bridge only hands over.
+Closer, for each topic that can be the last one: two to four lines, under 50 words. It ends on a reflection question that asks the learner to check something at their own workplace, or on a callback to that topic's anchor detail. No thanks, no "that's our time," and no list of what was covered. Don't mention topics other than that one.
+Follow the conversation feel rules. Delivery tags from each voice's palette: none or one per seam.
+Return ONLY a JSON object, with no prose before or after it, in exactly this shape:
+{"bridges":[{"from":"k1","to":"f1","lines":[{"speaker":"{speaker1}","text":"..."},{"speaker":"{speaker2}","text":"..."}]}],"closers":[{"after":"f1","lines":[{"speaker":"{speaker1}","text":"..."}]}]}
+Speaker names in capitals, exactly as in the script ({speakers}). The from, to and after values are the topic keys from the list above.`,
   },
 ];

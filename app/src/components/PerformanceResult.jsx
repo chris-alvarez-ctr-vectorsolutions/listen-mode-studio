@@ -4,7 +4,7 @@ const WPM = 140;                                   // the same pace the guide us
 const stripTags = t => (t || '').replace(/\[[^\]]*\]/g, ' ');
 const words = t => stripTags(t).trim().split(/\s+/).filter(Boolean).length;
 const clock = secs => `${Math.floor(secs / 60)}:${String(Math.round(secs % 60)).padStart(2, '0')}`;
-const isChapter = id => !/(^|[-_])(open|close)([-_]|$)/i.test(id) && !/^00[-_]/.test(id);
+const isChapter = id => !/(^|[-_])(open|close)([-_]|$)/i.test(id) && !/^00[-_]/.test(id) && !/^(bridge|closer)-/.test(id);
 
 // What the performance pass produced, in terms an LXD uses: the parts, how long they run, the listens made from them,
 // and the script with its delivery directions. Nothing here runs anything.
@@ -14,7 +14,7 @@ export default function PerformanceResult({ data, expectedIds = [], gap = 1.5 })
     const w = lines.reduce((n, l) => n + words(l.text), 0);
     const pauses = p.segments.reduce((n, s) => n + (s.pauseAfter || 0), 0);
     return {
-      id: p.id, title: p.title, segments: p.segments, lines: lines.length, words: w,
+      id: p.id, seam: p.seam, title: p.title, segments: p.segments, lines: lines.length, words: w,
       directions: lines.reduce((n, l) => n + ((l.text || '').match(/\[[^\]]+\]/g) || []).length, 0),
       flagged: p.segments.filter(s => s.flag).length,
       secs: (w / WPM) * 60 + pauses,
@@ -25,7 +25,7 @@ export default function PerformanceResult({ data, expectedIds = [], gap = 1.5 })
     const ids = l.parts || [];
     return { name: l.name, count: ids.filter(isChapter).length, secs: ids.reduce((n, id) => n + (byId[id]?.secs || 0), 0) + Math.max(0, ids.length - 1) * gap, parts: ids.length };
   });
-  const got = parts.map(p => p.id);
+  const got = parts.filter(p => !p.seam).map(p => p.id);
   const missing = expectedIds.filter(x => !got.includes(x));
   const extra = expectedIds.length ? got.filter(x => !expectedIds.includes(x)) : [];
   const full = listens.find(l => /full/i.test(l.name)) || listens[0];

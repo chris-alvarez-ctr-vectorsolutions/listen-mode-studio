@@ -36,22 +36,14 @@ export function buildManifest(m, settings, rendered) {
   const impact = buildImpact(m);
   for (const p of impact.partRows) if (p.stale.length) warnings.push(`"${p.id}" was rendered before ${p.stale.join(', ')} changed. Render it again.`);
 
-  for (const p of parts) {
-    const c = classifyPart(p.id);
-    if (!c) { warnings.push(`"${p.id}" doesn't look like a topic part, so it was left out.`); continue; }
-    if (c.kind === 'quickTake') { warnings.push(`"${p.id}" is a quick take. Remedial content isn't part of the audio, so it was left out.`); continue; }
-    if (!rendered.has(p.id)) { warnings.push(`"${p.id}" isn't rendered yet.`); continue; }
+  const seams = { bridges: {}, closers: {} };   // bridge and closer parts: the LMS plays them between topic parts it keeps
+  const entryFor = p => {
     const t = timings[p.id];
-    if (!t) warnings.push(`"${p.id}" was rendered before timings were recorded. Render it again.`);
     const entry = {
       file: `audio/${fileNameFor(m, p.id)}`,
       duration: t ? round(t.duration) : null,
       claims: p.claims || [],
-      segments: p.segments.map(s => ({
-        start: round(t?.segments.find(x => x.id === s.id)?.start),
-        lines: s.lines,
-        ...(s.pauseAfter ? { pauseAfter: s.pauseAfter } : {}),
-      })),
+      segments: p.segments.map(s => ({ start: round(t?.segments.find(x => x.id === s.id)?.start), lines: s.lines, ...(s.pauseAfter ? { pauseAfter: s.pauseAfter } : {}) })),
     };
     files.push({ partId: p.id, name: fileNameFor(m, p.id) });
     if (t?.cues?.length) {
@@ -59,6 +51,23 @@ export function buildManifest(m, settings, rendered) {
       captions.push({ path, vtt: toVtt(t.cues) });
       entry.captions = path;
     }
+    return entry;
+  };
+
+  for (const p of parts) {
+    if (p.seam) {
+      if (!rendered.has(p.id)) { warnings.push(`"${p.id}" isn't rendered yet.`); continue; }
+      if (!timings[p.id]) warnings.push(`"${p.id}" was rendered before timings were recorded. Render it again.`);
+      const key = p.id.replace(/^(bridge|closer)-/, '');
+      if (p.seam === 'bridge') seams.bridges[key.replace('-', '>')] = entryFor(p); else seams.closers[key] = entryFor(p);
+      continue;
+    }
+    const c = classifyPart(p.id);
+    if (!c) { warnings.push(`"${p.id}" doesn't look like a topic part, so it was left out.`); continue; }
+    if (c.kind === 'quickTake') { warnings.push(`"${p.id}" is a quick take. Remedial content isn't part of the audio, so it was left out.`); continue; }
+    if (!rendered.has(p.id)) { warnings.push(`"${p.id}" isn't rendered yet.`); continue; }
+    if (!timings[p.id]) warnings.push(`"${p.id}" was rendered before timings were recorded. Render it again.`);
+    const entry = entryFor(p);
     const topic = (topics[c.topic] ||= { position: c.pos });
     topic.position = Math.min(topic.position, c.pos);
     topic[c.variant] = entry;
@@ -98,6 +107,7 @@ export function buildManifest(m, settings, rendered) {
     spliceFadeMs: 25,
     order,
     topics,
+    seams,
     pathways: { feelLowMax: FEEL_LOW_MAX, minChapters: MIN_CHAPTERS, remedial: 'external' },
     listens: (m.parts?.assembly || []).map(l => {
       const out = { name: l.name, parts: l.parts };

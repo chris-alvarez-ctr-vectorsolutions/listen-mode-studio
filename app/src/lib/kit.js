@@ -184,6 +184,7 @@ const STAGE_NEEDS = {
   beats: { lint: false },
   validity: { patterns: false },
   performance: { setup: false, voice: false, patterns: false, lint: false },
+  seams: { setup: false, patterns: false, lint: false },
 };
 
 // System prompt for a call: the instructions, the show setup, and the reference files, with the conversation

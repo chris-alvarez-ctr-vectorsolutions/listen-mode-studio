@@ -5,6 +5,8 @@ import { addRuleToKit, fillStagePrompt, loadKit, systemPrompt } from '../lib/kit
 import { callClaude } from '../lib/claude.js';
 import { composeSeed, fieldsFor, missingRequired, seedFieldsOf } from '../lib/seed.js';
 import { parsePerformance, scriptOnly } from '../lib/script.js';
+import { applySeams, parseSeams, seamBlock } from '../lib/seams.js';
+import SeamsResult from '../components/SeamsResult.jsx';
 import { inAudio, normalizeObjective, pathwayBlock, planParts } from '../lib/pathways.js';
 import { parseSeedTemplate, templatePrompt } from '../lib/seedTemplate.js';
 import { buildImpact, dropLedgerRow, editLedgerRow, parseLedger, parseLedgerRows } from '../lib/claims.js';
@@ -160,7 +162,7 @@ export default function Workspace() {
       // a revision (userText) continues the conversation.
       const start = userText ? mod.thread.length : (st(stage.id).threadStart ?? mod.thread.length);
       const base = mod.thread.slice(0, start);
-      const withTable = stage.id === 'plan' && !userText ? `${pathwayBlock(mod.objectives) || '(No pathway table has been entered.)'}\n\n---\n\n${prompt}` : prompt;
+      const withTable = stage.id === 'seams' && !userText ? `${seamBlock(mod.objectives)}\n\n---\n\n${prompt}` : stage.id === 'plan' && !userText ? `${pathwayBlock(mod.objectives) || '(No pathway table has been entered.)'}\n\n---\n\n${prompt}` : prompt;
       const content = base.length === 0 ? `${seedBlock(mod, withSources)}\n\n---\n\n${withTable}` : withTable;
       const thread = [...base, { role: 'user', content }];
       let send = thread.length > 1 ? [{ ...thread[0], content: freshSeed(thread[0].content, mod, withSources) }, ...thread.slice(1)] : thread;
@@ -188,6 +190,13 @@ export default function Workspace() {
       if (stage.kind === 'json') {
         try { patch.parts = parsePerformance(reply); }
         catch (e) { setError(`Couldn't read the script with delivery directions: ${e.message}. Run the stage again.`); }
+        // A new performance pass replaces the parts, so bridges written for the old ones are gone: run Seams again.
+        const { seams: _gone, ...keep } = patch.stages;
+        patch.stages = keep;
+      }
+      if (stage.kind === 'seams') {
+        try { patch.parts = applySeams(cur().parts, parseSeams(reply)); }
+        catch (e) { setError(`Couldn't read the seams: ${e.message}. Run the stage again.`); }
       }
       await update(patch);
       ok = true; return true;
@@ -636,6 +645,7 @@ Don't invent objectives. Reply with the JSON array only.`;
                   ? <PerformanceResult data={m.parts} expectedIds={planParts(m.objectives || []).map(p => p.id)} gap={loadSettings().gapBetweenParts} />
                   : <div className="space-y-2"><p className="text-sm text-muted">The reply couldn't be read as a script with delivery directions. Run this step again. What came back is below.</p><pre className="max-h-96 overflow-auto rounded bg-paper p-3 text-xs">{out}</pre></div>
               )}
+              {busy !== stage.id && out && stage.kind === 'seams' && <SeamsResult text={out} applied={!!m.parts?.parts?.some(p => p.seam)} />}
               {busy !== stage.id && out && stage.id === 'ledger' && ledgerRows.length > 0 && (
                 <LedgerReview rows={ledgerRows} meta={claimMeta} suggestingId={suggestingId} disabled={!!busy || !!suggestingId}
                   onAction={decide} onSuggest={suggestFix} onNote={noteClaim} />
@@ -705,8 +715,15 @@ Don't invent objectives. Reply with the JSON array only.`;
             })()}
             {busy !== stage.id && out && stage.kind === 'json' && m.parts && (
               <div className="mt-4 flex justify-end border-t border-rule pt-4">
+                <button className="btn-primary" disabled={!!busy} onClick={async () => { if (st(stage.id).status !== 'approved') await approve(stage); setActive('seams'); }}>
+                  {st(stage.id).status === 'approved' ? '' : 'Approve · '}Next: 9. Seams ›
+                </button>
+              </div>
+            )}
+            {busy !== stage.id && out && stage.kind === 'seams' && m.parts && (
+              <div className="mt-4 flex justify-end border-t border-rule pt-4">
                 <button className="btn-primary" disabled={!!busy} onClick={async () => { if (st(stage.id).status !== 'approved') await approve(stage); navigate(`/m/${m.id}/render`); }}>
-                  {st(stage.id).status === 'approved' ? '' : 'Approve · '}Next: 9. Render audio ›
+                  {st(stage.id).status === 'approved' ? '' : 'Approve · '}Next: Render audio ›
                 </button>
               </div>
             )}
