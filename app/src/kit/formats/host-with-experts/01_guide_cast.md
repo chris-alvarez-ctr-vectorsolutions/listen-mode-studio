@@ -21,7 +21,7 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 - Three distinct voices. Each part uses one of them. The beat sheet chooses the voice and the role, and a role is the credential: a safety manager, a line operator, a supervisor, a new hire. It is never a name.
 - Their first words are about why this question matters on their job, not about their credentials.
 - Speak from experience in plain, warm, specific sentences ("I've seen...", "On my line...").
-- Carry most of the words, roughly two-thirds.
+- Carry most of the words, roughly 55 to 60 percent.
 - Never mention another expert. Each answers one question.
 - Their stories are characterization only. They never carry a fact, statistic, injury, exposure or outcome the claims ledger doesn't hold.
 

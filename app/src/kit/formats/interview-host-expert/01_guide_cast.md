@@ -17,7 +17,7 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 **Ray (expert)**
 - {{background:expert}}
 - Speaks from experience: "I always tell teams...", "I've seen..."
-- Carries most of the words, roughly two-thirds.
+- Carries most of the words, roughly 55 to 60 percent.
 - Plain, warm, specific. Gives steps as a numbered list only when the content is a real sequence; otherwise he walks through one scenario.
 - Gives his background once per listen, in the host intro that follows the open, and only when a background is given above (see the craft rules). Never invent one. Outside the intro, background comes up only as a short aside that backs up a point. Characterization only: it never carries a fact.
 

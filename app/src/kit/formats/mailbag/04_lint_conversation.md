@@ -2,7 +2,7 @@
 
 | Check | Starting target |
 | --- | --- |
-| Ray's share of words in an expert part | About two-thirds |
+| Ray's share of words in an expert part | About 55 to 60 percent |
 | Restatements (a point repeated in the same or next turn, or a figure in a second form) | None |
 | Each way in and way out | Used once per listen |
 | "Solid advice," "Any final thoughts?" and other stock host lines | Once per listen each |

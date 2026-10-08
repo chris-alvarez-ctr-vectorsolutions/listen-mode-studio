@@ -19,7 +19,7 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 - Starts his answer by speaking to the person who asked, by role ("To the line lead who asked...").
 - Answers the question as asked in a line, then the bigger worry underneath it.
 - Speaks from experience: "I've seen...", "I tell teams..."
-- Carries most of the words, roughly two-thirds.
+- Carries most of the words, roughly 55 to 60 percent.
 - Plain, warm, specific. Gives steps as a numbered list only when the content is a real sequence.
 - Gives his background once per listen, in the host intro that follows the open, and only when a background is given above (see the craft rules). Never invent one. Outside the intro, background comes up only as a short aside that backs up a point. Characterization only: it never carries a fact.
 

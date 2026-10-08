@@ -2,7 +2,7 @@
 
 | Check | Starting target |
 | --- | --- |
-| Expert's share of words in an expert part | About two-thirds |
+| Expert's share of words in an expert part | About 55 to 60 percent |
 | Narration between expert lines | Two to four sentences |
 | Restatements (a point repeated in the same or next turn, or a figure in a second form) | None |
 | Each way in and way out | Used once per listen |

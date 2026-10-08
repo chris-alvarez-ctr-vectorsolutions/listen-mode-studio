@@ -2,7 +2,7 @@
 
 | Check | Starting target |
 | --- | --- |
-| Ray's share of words in an expert part | About two-thirds |
+| Ray's share of words in an expert part | About 55 to 60 percent |
 | Restatements (a point repeated in the same or next turn, or a figure in a second form) | None |
 | Times the myth is said in a part | Once |
 | Each way in and way out | Used once per listen |
