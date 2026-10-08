@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { parseScript } from '../lib/script.js';
 import { speakerColor } from './speaker.js';
+import Markdown from './Markdown.jsx';
 
 // Click any line to leave a note. Notes can go back to Claude as a revision, or become a kit rule.
 // "01-k1-base · The blade at the bench" -> the part ID stays fixed and only the title is edited.
@@ -37,12 +38,36 @@ function Heading({ text, onRename, disabled }) {
   );
 }
 
-export default function ScriptReview({ text, notes, onAddNote, onRemoveNote, onSaveRule, onRenameHeading, disabled }) {
-  const items = useMemo(() => parseScript(text), [text]);
+// Everything before the first part heading ("## 00-open ...") is the writer's own preamble (a title and status notes),
+// not script. It is shown as formatted notes. The parse still runs over the whole text, so line keys, and the notes
+// attached to them, stay the same.
+const PART_HEADING = /^#{1,3}\s+\d{2}[-_]/;
+const RULE = /^\s*(-{3,}|\*{3,}|_{3,})\s*$/;
+const isRow = l => /^\s*\|/.test(l || '');
+const isItem = l => /^\s*([-*+]|\d+[.)])\s/.test(l || '');
+// The parser drops blank lines, so put back the ones Markdown needs: around tables, and between separate paragraphs.
+const respace = lines => lines.reduce((out, l, i) => {
+  const prev = lines[i - 1];
+  if (i && !((isRow(l) && isRow(prev)) || (isItem(l) && isItem(prev)))) out.push('');
+  out.push(l);
+  return out;
+}, []).join('\n');
+
+export default function ScriptReview({ text, notes = [], onAddNote, onRemoveNote, onSaveRule, onRenameHeading, disabled, readOnly = false }) {
+  const { items, preamble } = useMemo(() => {
+    const lines = text.split('\n');
+    const cut = lines.findIndex(l => PART_HEADING.test(l));
+    const all = parseScript(text);
+    if (cut <= 0) return { items: all, preamble: '' };
+    const pre = lines.slice(0, cut).filter(l => !RULE.test(l));
+    if (/^#{1,3}\s/.test(pre[0] || '') && pre.some((l, i) => i > 0 && l.trim())) pre.shift();   // a bare title line
+    return { items: all.filter(it => Number(it.key.slice(1)) >= cut), preamble: pre.join('\n').trim() };
+  }, [text]);
   const [open, setOpen] = useState(null);
   const [note, setNote] = useState('');
   const [better, setBetter] = useState('');
   const noteFor = key => notes.find(n => n.key === key);
+  const Line = readOnly ? 'div' : 'button';
 
   function submit(item) {
     if (!note.trim()) return;
@@ -52,17 +77,29 @@ export default function ScriptReview({ text, notes, onAddNote, onRemoveNote, onS
 
   return (
     <div className="font-script text-[15px] leading-relaxed">
-      {items.map(item => {
+      {preamble && (
+        <details open className="mb-6 rounded-md border border-rule bg-paper p-4 font-ui text-sm">
+          <summary className="cursor-pointer font-medium">Notes from the writer</summary>
+          <div className="mt-2"><Markdown text={preamble} /></div>
+        </details>
+      )}
+      {items.map((item, i) => {
         if (item.type === 'heading') return <Heading key={item.key} text={item.text} onRename={onRenameHeading} disabled={disabled} />;
         if (item.type === 'cue') return <p key={item.key} className="my-1 font-ui text-xs text-muted">⟨ {item.text} ⟩</p>;
-        if (item.type === 'text') return <p key={item.key} className="my-1 text-muted">{item.text}</p>;
+        if (item.type === 'text') {
+          if (items[i - 1]?.type === 'text') return null;   // rendered with the run it belongs to
+          const run = [];
+          for (let j = i; items[j]?.type === 'text'; j++) run.push(items[j].text);
+          const md = respace(run.filter(l => !RULE.test(l)));
+          return md.trim() ? <div key={item.key} className="my-3 text-muted"><Markdown text={md} /></div> : null;
+        }
         const existing = noteFor(item.key);
         return (
           <div key={item.key} className={`group -mx-2 rounded px-2 py-1 ${existing ? 'bg-amber-50' : 'hover:bg-paper'}`}>
-            <button type="button" className="w-full text-left" onClick={() => { setOpen(open === item.key ? null : item.key); setNote(''); setBetter(''); }}>
+            <Line {...(readOnly ? {} : { type: 'button', onClick: () => { setOpen(open === item.key ? null : item.key); setNote(''); setBetter(''); } })} className="block w-full text-left">
               <span className={`mr-2 font-ui text-xs font-semibold ${speakerColor(item.speaker)}`}>{item.speaker}</span>
               {item.text}
-            </button>
+            </Line>
             {existing && (
               <div className="mt-1 flex flex-wrap items-center gap-2 font-ui text-sm">
                 <span className="text-ink">Note: {existing.note}</span>

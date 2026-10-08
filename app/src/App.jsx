@@ -3,6 +3,7 @@ import Modules from './pages/Modules.jsx';
 import Workspace from './pages/Workspace.jsx';
 import Render from './pages/Render.jsx';
 import Impact from './pages/Impact.jsx';
+import Runs from './pages/Runs.jsx';
 import Kit from './pages/Kit.jsx';
 import Settings from './pages/Settings.jsx';
 
@@ -19,8 +20,8 @@ export default function App() {
           </NavLink>
           <nav className="flex gap-1">
             <NavLink to="/" end className={nav}>Modules</NavLink>
-            <NavLink to="/kit" className={nav}>Kit</NavLink>
             <NavLink to="/settings" className={nav}>Settings</NavLink>
+            <NavLink to="/kit" className={nav}>Advanced</NavLink>
           </nav>
         </div>
       </header>
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/m/:id" element={<Workspace />} />
           <Route path="/m/:id/render" element={<Render />} />
           <Route path="/m/:id/impact" element={<Impact />} />
+          <Route path="/m/:id/runs" element={<Runs />} />
           <Route path="/kit" element={<Kit />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

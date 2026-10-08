@@ -10,6 +10,9 @@ export const SEED_FIELDS = [
   { id: 'claims', label: 'Content claims', rows: 8, required: true,
     help: 'The facts, steps and rules the script may state, one per line. Add the source in brackets (slide, SOP, reference) when you have it. The claims ledger is built from this, and the script can only say what is listed here.',
     placeholder: 'Focaccia is cooled completely before it is sliced. [Cafe prep SOP, section 1]\nSlicing warm focaccia squashes the crumb and tears the crust. [Cafe prep SOP, section 1.3]\nTomato goes in last and is patted dry first, because it is the wettest ingredient. [Cafe prep SOP, section 3.2]' },
+  { id: 'questions', label: 'Learner questions', rows: 5, required: false, onlyFor: ['mailbag'],
+    help: 'Real questions from learners, SMEs or supervisors, one per line, in their own words. Take them from LMS threads, help-desk tickets, FAQs or feedback forms (with permission), and leave out anything that identifies the person. The mailbag answers one per part. If you have none for an objective, the writer will make up a typical one and say so.',
+    placeholder: 'My sandwiches look great at the pass but the bread is soggy by the time they reach the table. What am I doing wrong?\nDo I really have to pat the tomato dry every time?' },
   { id: 'skip', label: 'Skip rules', rows: 2, required: false,
     help: 'Topics that are out of scope or can be skipped.',
     placeholder: 'Skip how to bake the focaccia, sourcing ingredients, and allergen labeling.' },
@@ -47,6 +50,9 @@ export const EXAMPLE_OBJECTIVES = [
   { id: 'F1', objective: 'Recognize why a sandwich that looks fine at the pass can fail.', type: 'Feel', subscale: 'Believe', policy: 'Remediate', lock: 'open', audio: true },
   { id: 'D1', objective: 'Build a focaccia sandwich in the correct order.', type: 'Do', subscale: 'Apply', policy: 'Never skipped', lock: 'open', audio: false },
 ];
+
+// The intake fields a conversation type uses. Most apply to every format; a few belong to one.
+export const fieldsFor = conversationId => SEED_FIELDS.filter(f => !f.onlyFor || f.onlyFor.includes(conversationId));
 
 export function composeSeed(fields) {
   return SEED_FIELDS

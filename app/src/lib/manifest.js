@@ -4,7 +4,7 @@ import { FEEL_LOW_MAX, MIN_CHAPTERS, inAudio, planParts, routeOf, topicKey, vers
 
 // Turns a module's rendered parts and recorded timings into the manifest the listen prototype plays from.
 const VARIANTS = ['base', 'testup', 'reinforced'];
-const LEGACY = ['normal', 'harder', 'addon'];   // names from before the pathway rules
+const LEGACY = ['normal', 'harder'];   // names from before the pathway rules
 
 // Part id -> { kind: 'part', pos, topic, variant } | { kind: 'quickTake', topic } | null.
 // Tolerates a DRAFT- prefix and export-index prefixes like "01_01-k1-normal".
@@ -86,7 +86,7 @@ export function buildManifest(m, settings, rendered) {
     }
   }
   const required = planParts(objectives).map(p => p.id);
-  for (const id of required) if (!parts.some(p => p.id === id)) warnings.push(`The pathway table calls for "${id}", but the render data has no such part.`);
+  for (const id of required) if (!parts.some(p => p.id === id)) warnings.push(`The pathway table calls for "${id}", but the script has no such part.`);
 
   const order = Object.keys(topics).sort((a, b) => topics[a].position - topics[b].position);
   const manifest = {

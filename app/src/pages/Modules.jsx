@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { deleteModule, listModules, newModule, saveModule } from '../lib/store.js';
 import { download, readFileText } from '../lib/download.js';
+import { startingSetup } from '../lib/definitions.js';
 
 export default function Modules() {
   const [mods, setMods] = useState([]);
@@ -13,7 +14,7 @@ export default function Modules() {
   async function create(e) {
     e.preventDefault();
     if (!name.trim()) return;
-    const m = await saveModule(newModule(name.trim()));
+    const m = await saveModule(newModule(name.trim(), startingSetup()));
     navigate(`/m/${m.id}`);
   }
   async function importModule(e) {
@@ -36,6 +37,7 @@ export default function Modules() {
             <li key={m.id} className="flex items-center justify-between gap-4 p-4">
               <div>
                 <Link to={`/m/${m.id}`} className="font-medium hover:underline">{m.name}</Link>
+                {m.description?.trim() && <div className="mt-0.5 line-clamp-2 whitespace-pre-wrap text-sm text-muted">{m.description}</div>}
                 <div className="text-sm text-muted">Updated {new Date(m.updatedAt).toLocaleString()}</div>
               </div>
               <div className="flex gap-2">

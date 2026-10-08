@@ -17,7 +17,7 @@ export default function Impact() {
     <div className="space-y-6">
       <div>
         <Link to={`/m/${m.id}`} className="text-sm text-muted hover:text-ink">Back to {m.name}</Link>
-        <h1 className="mt-1 text-2xl font-semibold">Claim impact</h1>
+        <h1 className="mt-1 text-2xl font-semibold">Where each claim is used</h1>
         <p className="text-sm text-muted">Which parts rest on which ledger claims, and which need redoing because a claim changed since they were made. Ledger version {r.version}.</p>
       </div>
 

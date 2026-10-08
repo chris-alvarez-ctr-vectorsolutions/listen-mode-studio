@@ -1,5 +1,12 @@
 // Parsing helpers shared by review and render.
 
+// A script-stage reply -> just the scripts: from the first part heading ("## 01-k1-base ...") on.
+// The validity pass puts its pass/fail report first, and the editor shouldn't start by reading that.
+export function scriptOnly(reply = '') {
+  const i = reply.search(/^#{2}\s+\d{2}[-_]/m);
+  return i > 0 ? reply.slice(i) : reply;
+}
+
 const SPEAKER_LINE = /^\s*\**([A-Z][A-Z .'-]{0,24}?)\**\s*:\s*(.+)$/;
 const CUE_LINE = /^\s*[⟨<]\s*(.+?)\s*[⟩>]\s*$/;
 const HOLD = /HOLD\s*(\d+(?:\.\d+)?)\s*s?/i;
@@ -63,7 +70,7 @@ export function chunkLines(lines, limit = 1900) {
   let size = 0;
   for (const l of lines) {
     const n = l.text.length;
-    if (cur.length && size + n > limit) { chunks.push(cur); cur = []; size = 0; }
+    if (cur.length && size + n > limit && !/^[—–-]/.test(l.text.trim())) { chunks.push(cur); cur = []; size = 0; }
     cur.push(l);
     size += n;
   }

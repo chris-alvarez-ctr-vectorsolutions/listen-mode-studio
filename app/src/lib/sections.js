@@ -18,24 +18,45 @@ export function splitSections(text = '') {
   };
 }
 
-// Numbered list ("1. ...", "2) ...") -> { intro, items: [{ n, text, fix }] }, or null when there is no list.
-// fix is the text after "Fix:" when the item has one, so the LXD can change it.
+// The editor's reply -> { intro, items: [{ n, label, group, groupNote, text, fix }] }, or null when there are no items.
+// Items may be plain numbered lines ("1. ..."), or numbered headings ("### 1. Title" or "**1. Title**") with bullets under
+// them. Unnumbered headings ("Blocking", "Should fix") are groups. n is a unique key; label is the number as written
+// (numbering often restarts in each group). fix is the text after "Fix:" so the LXD can change it.
+const ITEM = /^\s{0,3}(?:#{1,6}\s+)?(?:\*\*)?(\d+)[.)]\s+(.*?)(?:\*\*)?\s*$/;
+const GROUP = /^#{1,6}\s+(.+?)\s*#*\s*$/;
 export function splitFixItems(text = '') {
   const lines = text.split('\n');
-  const intro = [];
   const items = [];
+  const pre = [];                       // everything before the first item
+  let group = null, cur = null;
+  const startGroup = title => { group = { title: title.replace(/\*+/g, '').trim(), note: [] }; cur = null; };
   for (const line of lines) {
-    const m = line.match(/^\s{0,3}(\d+)[.)]\s+(.*)$/);
-    if (m) { items.push({ n: m[1], lines: [m[2]] }); continue; }
-    (items.length ? items[items.length - 1].lines : intro).push(line);
+    const m = line.match(ITEM);
+    if (m) {
+      if (!items.length) {              // the last heading before the first item is its group; the rest is the intro
+        const at = pre.map(l => GROUP.test(l)).lastIndexOf(true);
+        if (at >= 0) { startGroup(pre[at].match(GROUP)[1]); group.note = pre.slice(at + 1); pre.length = at; }
+      }
+      const heading = /^\s{0,3}(#{1,6}\s+|\*\*)/.test(line);
+      cur = { label: m[1], heading, title: m[2], lines: [], group: group?.title || '', groupNote: group && !group.shown ? group.note.join('\n').trim() : '' };
+      if (group) group.shown = true;
+      items.push(cur);
+      continue;
+    }
+    const g = items.length ? line.match(GROUP) : null;
+    if (g) { startGroup(g[1]); continue; }
+    if (cur) cur.lines.push(line);
+    else if (group && items.length) group.note.push(line);
+    else pre.push(line);
   }
   if (!items.length) return null;
   return {
-    intro: intro.join('\n').trim(),
-    items: items.map(it => {
-      const body = it.lines.join('\n').trim();
-      const f = body.match(/\*{0,2}Fix:?\*{0,2}:?\s*([\s\S]*)$/i);
-      return { n: it.n, text: body, fix: f ? f[1].trim() : '' };
+    intro: pre.join('\n').trim(),
+    items: items.map((it, i) => {
+      const rest = it.lines.join('\n').trim();
+      const body = it.heading ? `**${it.title}**${rest ? `\n\n${rest}` : ''}` : [it.title, rest].filter(Boolean).join('\n').trim();
+      const f = body.match(/\bFix\*{0,2}:\*{0,2}\s*([\s\S]*)$/i);
+      return { n: String(i + 1), label: it.label, group: it.group, groupNote: it.groupNote, text: body, fix: f ? f[1].trim() : '' };
     }),
   };
 }

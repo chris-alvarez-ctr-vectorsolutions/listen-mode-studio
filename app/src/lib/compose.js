@@ -62,6 +62,11 @@ export function compose(objectives, learners) {
       }
     }
     if (o.type === 'Feel') note = l.pre <= FEEL_LOW_MAX ? 'Low pre-check score. The audio still plays, and the interactive step picks up the low score.' : 'High pre-check score. Plays, same as always.';
+    // A Feel topic with a Reinforced version has two parts, so the pre-check picks one: the Reinforced replaces the Base on a low score.
+    if (o.type === 'Feel' && r.kind === 'reinforce') {
+      if (l.pre <= FEEL_LOW_MAX) { variant = 'reinforced'; tag = 'reinforced'; note = `Agreement of ${FEEL_LOW_MAX} or lower on the pre-check: the Reinforced version plays instead of the Base. The interactive step also picks up the low score.`; }
+      else { variant = 'base'; note = 'High pre-check score. The Base plays.'; }
+    }
 
     if (outcome === 'out') {
       items.push({ key: o.id, kind: 'skip', objective: o.id, label: `${o.id} tested out`, note: 'The pre-check was correct, so the base is removed.' });

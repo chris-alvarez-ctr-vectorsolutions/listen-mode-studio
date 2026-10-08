@@ -1,9 +1,12 @@
-// Stage prompts, adapted from 05_stage_prompts.md. {module} is replaced with the module name.
+// Stage prompts, adapted from 05_stage_prompts.md. {module} is replaced with the module name; {speaker1}, {speaker2} and {speakers} with the cast of its conversation type.
 // kind: 'doc' = read and approve; 'script' = line-by-line review; 'editor' = fresh reviewer; 'json' = render data
 export const DEFAULT_STAGES = [
   {
     id: 'ledger', n: 2, title: 'Claims ledger', kind: 'doc', skippable: true,
     gate: 'An SME signs the ledger before anything is rendered for real.',
+    purpose: "The list of facts the script is allowed to say. Every line of the script traces back to it.",
+    check: ["Is each claim true, in scope and worded plainly?", "For each flagged claim, accept the proposed fix, edit it, or send it to the SME.", "Have the SME sign it before anything is rendered for real."],
+    next: "Episode plan",
     prompt: `From the source content for {module} (the seed text and any attached source files), build a claims ledger as a table:
 ID (C01, C02...) | the claim in one plain sentence | source (learning objective and slide or reference) | flag | proposed fix.
 Flag any claim with a scope limit, a conflict with another claim, or a claim the source content doesn't support. Leave the flag empty for claims with no problem.
@@ -14,58 +17,82 @@ Stop when done.`,
   {
     id: 'plan', n: 3, title: 'Episode plan', kind: 'doc',
     gate: 'You approve the plan.',
+    purpose: "A one-page blueprint of the episode, before anything is written. It is the cheap place to catch a wrong structure, before the beat sheets and the script are built on it.",
+    check: ["Does each part cover the right objective, with an angle you would want to hear?", "Do the angles and the ways in and out differ from part to part?", "Are the claims you care about assigned to a part?", "Does \"Needs your attention\" list anything to settle first?"],
+    next: "Beat sheets, where each part gets its outline",
     prompt: `Using the production guide and the module files above, plan the episode for {module}. The pathway table above is fixed: the objectives, their KFD types, the versions each one needs, the part IDs and the listens. Don't add, drop, rename or re-route any of it. If the table is missing, say so and stop.
-1. For each part in the table, in order, give: the part ID, the objective, the angle in one line (the scenario, story or evidence it will use), the way in and way out, and the ledger claim IDs it rests on. A Test-up is a harder scene with the same facts, and the learner never heard the Base. A Reinforced version gives a Feel topic more weight with the same facts, and replaces the Base.
-2. Name the positions that play in every listen, and what the open may promise. The open can only promise content from positions that play in every listen.
-3. Copy the listens from the table into an assembly table, add each one's estimated runtime, and order them from fewest chapters to most. Flag any listen under three chapters.
-4. Describe the master script (the Full listen).
-5. List any objective the ledger doesn't support.
+This is a one-page blueprint, not the beat sheets. Keep every table cell to one short line. Do not write beat-level detail (holds, constraints, shapes, word counts, sample lines): the next stage does that.
+Use exactly these four sections, each starting with a "##" heading:
+## Parts
+A table with one row per part in the pathway table, in listen order, plus the open and the close. Columns: Part ID | Objective | Angle (one line: the scenario, story or evidence it will use) | Way in, way out | Claims (ledger IDs). A Test-up is a harder scene with the same facts, and the learner never heard the Base. A Reinforced version gives a Feel topic more weight with the same facts, and replaces the Base. The open's angle names only content from positions that play in every listen.
+## Plays in every listen
+One or two lines: which positions play in every listen, and what the open may promise.
+## Listens
+A table copied from the pathway table. Columns: Listen | Parts (IDs) | Chapters | Estimated runtime. Order the rows from fewest chapters to most, and flag any listen under three chapters. Then one sentence describing the master script (the Full listen).
+## Needs your attention
+A short bullet list of only real problems: an objective the ledger doesn't support, ledger claims no part uses, a listen under three chapters, or a part whose angle repeats another's. Write "Nothing." if there are none.
 Stop and wait for approval.`,
   },
   {
     id: 'beats', n: 4, title: 'Beat sheets', kind: 'doc',
     gate: 'A learning designer approves the beats.',
+    purpose: "An outline for each part: what is said, in what order, with which claims. The script is written from these, so changes are cheapest here.",
+    check: ["Does each part meet its objective, with a concrete detail worth hearing?", "Does each part take a different shape from the others?", "Are the required claims present, and none invented?"],
+    next: "Draft, the first full script",
     prompt: `Write a beat sheet for every asset in the approved plan: the open, every part in the pathway table (Base, Test-up, Reinforced or single version) and the close.
-Use the bullet style of the K1 beats in the voice example. For each, include: the objective, the way in and way out (none repeated within a listen), the one concrete detail, the claim IDs, the emotional target, any judgment hold question, and the word target. No dialogue yet.
+Use the bullet style of the beats in the voice example. For each, include the shape the part will take (chosen from the pattern library, and different from the other parts), then: the objective, the way in and way out (none repeated within a listen), the one concrete detail, the claim IDs, the emotional target, any judgment hold question, and the word target. If the cast guide gives the expert a background, the open's beat sheet also covers the host intro that follows the open in the same asset: quote the background text it will use, the host states one specific fact from it and asks a short question that fits it (the expert is a co-host who already introduced himself, never a guest), the expert answers in two or three sentences using only that text, and the host moves on, without naming any topic part. If the cast guide gives no background, write no host intro and note that in the beat sheet. Never invent a background or a role question. No dialogue yet.
 Stop and wait for approval.`,
   },
   {
     id: 'draft', n: 5, title: 'Draft', kind: 'script',
     gate: 'You review the script line by line.',
-    prompt: `Write every asset from the approved beat sheets. Match the voice example above all: its moves, its register, and its conversational back-and-forth. Follow the production guide, but where a rule seems to pull away from the voice example, follow the example. Never reuse example wording from any kit file.
-Format: a heading per asset (## followed by the part ID from the pathway table and the title, for example "## 01-k1-base · The blade at the bench"), then one line per speaker as "NAME: text". Cue lines (holds and stings) in ⟨ ⟩ on their own lines. No delivery tags yet.
+    purpose: "The first full script, written line by line from the approved beats.",
+    check: ["Read it aloud. Does it sound like people talking, not reading?", "Click a line to leave a note, or save a note as a rule for every future module.", "Does every fact trace to the trace table at the end?"],
+    next: "Validity pass, which checks it against the rules",
+    prompt: `Write every asset from the approved beat sheets. Match the register of the voice example: how the hosts sound and their conversational back-and-forth. Take each part's shape from its beat sheet and the pattern library, not from the voice example's script, and never follow its sequence of moves, questions or lines. Follow the production guide. Never reuse example wording from any kit file.
+Format: a heading per asset (## followed by the part ID from the pathway table and the title, for example "## 01-k1-base · A short plain title"), then one line per speaker as "NAME: text". Cue lines (holds and stings) in ⟨ ⟩ on their own lines. No delivery tags yet.
 Write the Full listen's parts first, in order, then each Test-up and Reinforced version as a separate asset. Every part stands alone, and a Test-up or Reinforced version never relies on the learner having heard the Base.
-Before you finish, check each asset against the "Bad, then better" and "What not to copy" sections of the voice example and fix anything that matches.
+Before you finish, check each asset against the "Principles from review" and "What not to copy" sections of the voice example, and against the open's "what to avoid" list, and fix anything that matches.
 After the scripts, add a trace table mapping every claim-bearing line to its ledger ID, and list anything you needed that the ledger doesn't contain.`,
   },
   {
     id: 'validity', n: 6, title: 'Validity pass', kind: 'script',
     gate: 'Click each line to add editor notes.',
+    purpose: "A checklist pass that fixes mechanical problems and flags any new fact for the SME. It does not rewrite lines that work.",
+    check: ["Read each failure and its fix.", "Anything under \"For the SME\" needs an answer before it can stay in the script."],
+    next: "Editor pass, a fresh reviewer",
     prompt: `Run every check in the lint checklist against the latest script in this conversation.
-First, report each check as pass or fail. For each failure, quote the line and give the fix. List any new facts separately under "For the SME", with the line each came from.
+First, report each check as pass or fail. For each failure, quote the line and give the fix. List any new facts separately under "For the SME", with the line each came from. Treat as new facts any added detail the ledger doesn't state: how a device or process works or looks, a superlative or absolute ("most effective," "always"), what a person knew or was trained on, or a consequence. Flag them, quote the line, and don't cut them silently.
 Then output the full corrected script in the same format as the draft (## headings per asset, "NAME: text" lines, cue lines in ⟨ ⟩), applying every fix that doesn't need a new fact.`,
   },
   {
     id: 'editor', n: 7, title: 'Editor pass', kind: 'editor',
     gate: 'You pick which fixes to apply.',
-    prompt: `You're the showrunner. Review the script below against the production guide, the voice example and the lint checklist. The voice is already where we want it, so don't rewrite lines that work.
+    purpose: "A fresh reviewer reads the script cold and lists real problems. You choose which fixes to apply.",
+    check: ["Apply the fixes you agree with and skip the rest.", "Edit a fix before applying it if it is close but not right."],
+    next: "Performance pass, which adds delivery tags",
+    prompt: `You're the showrunner. Review the script below against the production guide, the voice example and the lint checklist. Don't rewrite lines that work. Do flag any part whose shape or lines track the voice example instead of its own beat sheet.
 List only real problems, numbered: the line, what's wrong, and the fix. Check especially: drift from the claims ledger, anything referred to before it's introduced, questions that don't connect, lines that would sound odd in a synthetic voice, and anything repeated across parts.
 Stop after the list.`,
   },
   {
     id: 'performance', n: 8, title: 'Performance pass', kind: 'json',
     gate: 'Ready to render.',
+    purpose: "Adds delivery directions to every line (tone, emphasis, short pauses) and splits the script into the pieces that get recorded. It changes no wording.",
+    check: ["Does every part in your pathway table appear in the list below?", "Open the script and skim a few lines: do the directions in [brackets] fit what the line says?"],
+    next: "Render audio, where the voices record it",
     prompt: `Run the performance pass on the final script in this conversation, following section 9 of the production guide. Don't change any wording.
 Return ONLY a JSON object, with no prose before or after it, in exactly this shape:
-{"parts":[{"id":"01-k1-base","title":"The blade at the bench","claims":["C01","C03"],"segments":[{"id":"01-k1-base-a","flag":null,"pauseAfter":0,"lines":[{"speaker":"DANA","text":"..."},{"speaker":"RAY","text":"[warmly] ..."}]}]}],
+{"parts":[{"id":"01-k1-base","title":"A short plain title","claims":["C01","C03"],"segments":[{"id":"01-k1-base-a","flag":null,"pauseAfter":0,"lines":[{"speaker":"{speaker1}","text":"..."},{"speaker":"{speaker2}","text":"[warmly] ..."}]}]}],
  "assembly":[{"name":"Master","parts":["00-open","01-k1-base","02-close"]}]}
 Rules:
 - Every asset is a part, in listen order, then the Test-up and Reinforced versions.
 - Part IDs come from the pathway table above. Use them exactly, because the audio and the listen prototype read them: "NN-topic-variant", where NN is the topic's position in the listen (00 for the open, then 01, 02... in order; the close takes the last number), topic is the objective ID in lowercase (k1, f1), and variant is base, testup or reinforced. A topic with a single version has no variant (for example "03-f2"). Every version of a topic shares the same NN and topic. If a script heading uses a different ID, fix it to the table's.
 - "claims" on each part lists every ledger claim ID its lines rest on, taken from the trace table (empty for the open and close if they carry none).
-- Speaker names in capitals, exactly as in the script.
-- Delivery tags only from each voice's palette, two to four per part, where the meaning or emotion shifts. CAPS on one or two words per part. Spell numbers and initialisms as spoken.
-- Split segments at every hold and at the part ending. pauseAfter is the seconds of silence after the segment: 3 for a judgment hold, 2 for an emotional hold, 0 otherwise.
+- Speaker names in capitals, exactly as in the script ({speakers}, plus any character).
+- Delivery tags only from each voice's palette, four to eight per part, never on consecutive lines, where the meaning or emotion shifts. A tag may be two short descriptive words in the voice's register. Use ellipses, dashes and punctuation for short pauses, never [pause]. When a line ends in a dash and the next starts with one (an interruption), keep both in the same segment. CAPS on one or two words per part. Spell numbers and initialisms as spoken.
+- In the open asset, when the open has a host intro, make the open proper one segment and the host intro a second segment, with pauseAfter 0 on the first (the renderer keeps the theme music with the open proper and starts the host intro after the music's tail). The host intro gets no music.
+- Split segments at every hold. pauseAfter is the seconds of silence after the segment: 3 for a judgment hold (only after a question spoken directly to the listener, never after one speaker asks another; the segment after the hold starts with the host handing the floor back, e.g. "Okay, [name], let's hear your answer now.", using whoever answers), 2 for an emotional hold, 0 otherwise.
 - Put every line tagged [FLAG] in its own segment and set "flag" to its flag ID. Remove the [FLAG] marker from the text.
 - No cue text, stage directions or segment IDs inside any line's text.
 - "assembly" lists every listen in the pathway table with the same names, each as an ordered list of part IDs.`,

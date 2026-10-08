@@ -6,7 +6,7 @@ const SETTINGS_KEY = 'mas.settings';
 export const DEFAULT_SETTINGS = {
   workerUrl: '',
   appToken: '',
-  claudeModel: 'claude-sonnet-5',
+  claudeModel: 'claude-opus-5-5',
   maxTokens: 16000,
   elevenModel: 'eleven_v4',
   stability: 0,            // 0 Creative, 0.5 Natural, 1 Robust (sent with every dialogue request)
@@ -25,7 +25,11 @@ export const DEFAULT_SETTINGS = {
 };
 
 export function loadSettings() {
-  try { return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') }; }
+  try {
+    const s = { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') };
+    if (s.claudeModel === 'claude-sonnet-5') s.claudeModel = DEFAULT_SETTINGS.claudeModel;   // the old default
+    return s;
+  }
   catch { return { ...DEFAULT_SETTINGS }; }
 }
 export function saveSettings(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
@@ -49,11 +53,13 @@ export const getAudio = (mid, pid) => get(AUDIO(mid, pid));
 export const saveAudio = (mid, pid, blob) => set(AUDIO(mid, pid), blob);
 export const deleteAudio = (mid, pid) => del(AUDIO(mid, pid));
 
-export function newModule(name) {
+export function newModule(name, setup) {
   return {
     id: crypto.randomUUID(),
     name,
     seed: '',
+    description: '',      // a note for people; saved and exported with the module, never sent to the AI
+    setup,                // industry, learner role and conversation type (see definitions.js)
     sources: [],          // [{ name, text }]
     ledgerSigned: false,
     thread: [],           // the running conversation for stages 2-8

@@ -26,4 +26,9 @@
   .prose-out th, .prose-out td { @apply border border-rule px-2 py-1 text-left align-top; }
   .prose-out code, .prose-out pre { @apply font-mono text-xs; }
   .prose-out pre { @apply my-3 overflow-x-auto rounded bg-paper p-3; }
+  .prose-tight ul { @apply my-1 list-none space-y-1.5 pl-0; }
+  .prose-tight ul ul { @apply mt-1 list-disc pl-5 space-y-0.5; }
+  .prose-tight p { @apply my-1; }
+  .prose-tight li > strong:first-child { @apply font-ui text-[11px] font-semibold uppercase tracking-wide text-muted; }
+  .prose-tight li > strong:first-child::after { content: ' '; }
 }
