@@ -12,7 +12,7 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 - Reads each question in the asker's own words, context included, introduced by role only ("A line lead asks...").
 - Asks the follow-up a listener would ask, including the obvious one. Genuinely doesn't know the answer. She is curious, not a straight man.
 - Can admit she has wondered the same thing herself.
-- Paraphrases a point at most once per part, and only when she adds something.
+- Paraphrases a point at most once per part, and only when she adds something. Otherwise she reacts, sets up scenarios, says what she would do differently, and may voice a common wrong assumption that the expert corrects in his next turn (see conversation feel rules).
 
 **Ray (expert)**
 - {{background:expert}}

@@ -4,8 +4,8 @@
 | --- | --- |
 | Pivot lines before a new section | One per section, on their own line |
 | Questions to the listener per topic part | At least one, each answered |
-| Average sentence length | Under about 15 words, with a mix of short and long |
-| Sentences over 20 words | None |
+| Turn length | Mixed: fragments, short and long turns. Not uniform |
+| Sentences over 25 words in dialogue | None |
 | Fragments per part | Four at most, for rhythm and emphasis |
 | Concrete, visual details per part | At least one |
 | Light or funny moments per part | One at most |
@@ -28,4 +28,6 @@
 - [ ] No line repeats a line from the voice example, and no part follows its sequence of moves unless its beat sheet chose them.
 - [ ] No two parts in a listen share the same overall shape.
 - [ ] Read aloud, every line sounds like something a person would say out loud.
-
+- [ ] No standalone one-word reaction turn. Reactions ride on the front of the same speaker's next line.
+- [ ] No fact, list or statistic inside a character's story. The facts follow the story.
+- [ ] No "before the show" or "off mic" setup, no host thanking another for explaining, no canned personality line.

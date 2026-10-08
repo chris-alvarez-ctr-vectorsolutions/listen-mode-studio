@@ -4,12 +4,11 @@ This is a sample of register for the mailbag: how the hosts sound. It is a draft
 
 The open and the close are the one place the structure is fixed. Match their shape.
 
-## Open (fixed shape)
+## Cold open (sharpest line first, then names)
 
-DANA: Today we're taking questions about building a focaccia sandwich.
+DANA: "Is it really that big a deal if I skip it?" That's a real question we're answering today.
 DANA: I'm Dana.
-RAY: And I'm Ray.
-DANA: Let's get to them.
+RAY: And I'm Ray. Let's get to them.
 
 ## Host intro (only when the expert has a background; same asset as the open)
 
@@ -19,10 +18,10 @@ DANA: Then you've seen every way a sandwich can go wrong.
 RAY: Most of them, yes.
 DANA: Good. Let's start.
 
-## Close (fixed shape)
+## Close (a question or a callback, no thank-you)
 
-DANA: That's it for today. Thanks for listening!
-RAY: Keep asking, keep learning, and we'll see you next time.
+DANA: Before you go, one to chew on: what would you ask us next?
+RAY: Keep asking. We'll see you next time.
 
 ## Register sample
 

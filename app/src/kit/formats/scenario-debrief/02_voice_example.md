@@ -4,12 +4,11 @@ This is a sample of register for a scenario and debrief: how the voices sound. I
 
 The open and the close are the one place the structure is fixed. Match their shape.
 
-## Open (fixed shape)
+## Cold open (sharpest line first, then names)
 
-DANA: Today we're talking about building a focaccia sandwich, and what happens when it looks fine but isn't.
+DANA: "It looked fine." That's where our story starts.
 DANA: I'm Dana.
-RAY: And I'm Ray.
-DANA: Let's get into it.
+RAY: And I'm Ray. Let's get into it.
 
 ## Host intro (only when the expert has a background; same asset as the open)
 
@@ -19,10 +18,10 @@ DANA: Then you've seen every way a sandwich can go wrong.
 RAY: Most of them, yes.
 DANA: Good. Let's start.
 
-## Close (fixed shape)
+## Close (a question or a callback, no thank-you)
 
-DANA: That's it for today. Thanks for listening!
-RAY: Keep learning, stay careful, and we'll be back soon.
+DANA: One question for your own counter: what would have made you stop and look twice?
+RAY: We'll be back soon.
 
 ## Register sample
 

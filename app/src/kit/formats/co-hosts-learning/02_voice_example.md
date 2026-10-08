@@ -4,17 +4,16 @@ This is a sample of register for two co-hosts learning together: how the voices 
 
 The open and the close are the one place the structure is fixed. Match their shape.
 
-## Open (fixed shape)
+## Cold open (sharpest line first, then names)
 
-DANA: Today we're learning how to build a focaccia sandwich, and we're figuring it out together.
-DANA: I'm Dana.
-RAY: And I'm Ray.
-DANA: Let's dig in.
+DANA: "I cut it, and it looked fine." That's the line that stuck with me.
+DANA: I'm Dana, and we're learning focaccia sandwiches together.
+RAY: I'm Ray. Let's dig in.
 
-## Close (fixed shape)
+## Close (a question or a callback, no thank-you)
 
-DANA: That's it for today. Thanks for listening!
-RAY: Keep learning, and we'll be back soon.
+DANA: One thing to take back to your own counter: when did you last check what's under the top slice?
+RAY: Keep learning. We'll be back soon.
 
 ## Register sample
 

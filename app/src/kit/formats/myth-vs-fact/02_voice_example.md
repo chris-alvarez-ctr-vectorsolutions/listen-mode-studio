@@ -4,12 +4,11 @@ This is a sample of register for myth versus fact: how the hosts sound. It is a 
 
 The open and the close are the one place the structure is fixed. Match their shape.
 
-## Open (fixed shape)
+## Cold open (sharpest line first, then names)
 
-DANA: Today we're checking what people say about slicing and building a focaccia sandwich against what the training says. What's true, what isn't, and what depends.
+DANA: "Everybody knows that." Today we find out if everybody's right.
 DANA: I'm Dana.
-RAY: And I'm Ray.
-DANA: Let's check some facts.
+RAY: And I'm Ray. Let's check some facts.
 
 ## Host intro (only when the expert has a background; same asset as the open)
 
@@ -19,10 +18,10 @@ DANA: Then you've seen every way a sandwich can go wrong.
 RAY: Most of them, yes.
 DANA: Good. Let's start.
 
-## Close (fixed shape)
+## Close (a question or a callback, no thank-you)
 
-DANA: That's it for today. Thanks for listening!
-RAY: Check the facts, trust the procedure, and we'll see you next time.
+DANA: Think of one thing you've always been told about your job. How would you check it?
+RAY: Check it, and we'll see you next time.
 
 ## Register sample
 

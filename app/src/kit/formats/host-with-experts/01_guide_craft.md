@@ -1,6 +1,6 @@
 ## 7. Craft rules
 
-- **The open** has a fixed shape, the one the voice example's open shows: one or two plain lines naming today's topic (only content every learner hears), the host's name, and a short line to start. It does not promise which experts the listener will hear. No scene, no characters. Under 60 words.
+- **The open** is a cold open: the sharpest line in content every learner hears (a line from a story, a striking detail), then the hosts' names and one short line to start. It is not an agenda read-out and does not list what's coming. It does not promise which experts the listener will hear. Under 60 words. Quoted story lines are allowed here only when that story's part plays in every listen. No host backgrounds.
 - **One expert per part,** introduced inside that part by role and one line on what that role sees. The part works whatever played before it, and any expert can be skipped or reordered.
 - **Narration poses the question first,** then the expert answers it. Narration is two to four sentences at a time between expert lines.
 - **Never claim a real person was involved.** No "I called up," "I spoke to," "we recorded," or "someone I know." The expert is simply "a safety manager" or "a line operator," speaking.
@@ -12,7 +12,7 @@
 - **No speaker has more than two lines in a row.**
 - At least one concrete, visual detail per part (the specific thing in the specific place, not an abstract label).
 - Plain words, contractions, few idioms. Many listeners speak English as a second language.
-- **Answers sound like speech.** Mostly full spoken sentences, but vary the rhythm the way people do: a short fragment, a trailing thought or a quick restart is fine in an answer when a person would say it that way ("Pretty much my whole career. Different kinds of places, honestly."). Never a bare list of notes, and never telegraphic fragments with no connective. Short reactions are their own lines.
+- **Answers sound like speech.** Mostly full spoken sentences, but vary the rhythm the way people do: a short fragment, a trailing thought or a quick restart is fine in an answer when a person would say it that way ("Twenty years. Different kinds of places."). Never a bare list of notes, and never telegraphic fragments with no connective. A short reaction rides at the front of the next line, never its own turn.
 - **Every question from Dana connects to the answer before it.**
 - **Nothing is referred to before it's introduced.**
 - **At most one interruption per part, in the conversational parts only.** When a speaker jumps in, mark it in the text: a dash ending the interrupted line and a dash starting the interrupting one ("So the part people forget is—" / "—the label, right."). Use it only where a real listener would already know where the line is going. Never in a part about harm, never inside a character's own story, and never in a way that cuts off a ledger claim. The interrupted line must still make sense without its ending.
@@ -30,7 +30,6 @@
 - Dana says what she'd do differently now.
 - The expert's own practical advice, last.
 - A question left with the listener.
-- Dana's short sign-off to the expert. Once per listen.
 
 ## 8. Length
 

@@ -18,7 +18,7 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 
 **Jacob (character)**
 - A dramatized person who tells one story, in the first person, in short, concrete sentences. Only when the story is longer than a few lines; a short story can be told by the host or expert instead. No one ever asks him a question, speaks to him, or waits for him to answer: his account is a recording, not a live interview.
-- Appears only in his own part. Never mentioned in the open or another part.
+- Appears only in his own part. Never mentioned in another part. The open may quote them only when their part plays in every listen.
 - Tells what he saw, felt and did, with small physical details (a hand that wouldn't stop shaking, a box left half open). He never explains the lesson.
 - The people and details in his story are characterization. They never carry a fact, a statistic, an injury count, an exposure level or a medical outcome the claims ledger doesn't hold.
 

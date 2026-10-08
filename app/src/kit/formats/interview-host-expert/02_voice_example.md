@@ -2,14 +2,13 @@
 
 Written by hand by Chris Alvarez. This is a sample of register: how the hosts sound. It is one good script, not the standard for how a script is shaped. How a part is built comes from its beat sheet, the pattern library and the production guide. Do not reuse this script's sequence of moves, its questions or its lines.
 
-The cold open and the close are the one place the structure is fixed. Match their shape.
+The cold open leads with the sharpest line in the module, then gives the names. The close ends on a question or a callback. Match their shape, not their wording.
 
-## Cold open (fixed shape)
+## Cold open (sharpest line first, then names)
 
-DANA: Today, on the show we're talking about sharps: what they are, how to handle them, and the dangers of not following procedure.
-DANA: I'm Dana...
-RAY: And I'm Ray.
-DANA: Let's get into it.
+DANA: "It looked fine from where I stood."
+DANA: That's a line from today. I'm Dana.
+RAY: And I'm Ray. Let's get into it.
 
 ## Host intro (only when the expert has a background; same asset as the open)
 
@@ -19,10 +18,10 @@ DANA: Then you've seen every way a sandwich can go wrong.
 RAY: Most of them, yes.
 DANA: Good. Let's start.
 
-## Close (fixed shape)
+## Close (a question or a callback, no thank-you)
 
-DANA: Well, that's it for today. Thank you for listening!
-RAY: Keep learning, stay safe, and we'll be back soon.
+DANA: Here's one to take back to your own kitchen: what's the first thing you check before you cut?
+RAY: Think about it on your next shift. We'll be back soon.
 
 ## Register sample
 
@@ -61,7 +60,7 @@ The beats for the first topic part, written before the dialogue. This shows the 
 
 ## The open: what to avoid
 
-A generated cold open that missed. The shape of the open is fixed, so these are the ways it went wrong.
+A generated open that missed: an agenda read-out with an unpaid setup. These are the ways it went wrong.
 
 **Missed**
 
@@ -79,13 +78,6 @@ DANA: Let's get into it.
 - Dana talks for six lines straight. That's a monologue, not a conversation.
 - It mentions a character. Characters appear only in their own part.
 - Ray volunteers his background outside the host intro. After the intro, he shares it only as an aside that supports a point.
-
-**Approved (generated, then kept as written)**
-
-DANA: Our topic today is sharps. The hazards that are easy to miss, why a container beats gloves, and what people on the floor really do.
-DANA: I'm Dana.
-RAY: And I'm Ray.
-DANA: Here we go.
 
 ## Principles from review
 

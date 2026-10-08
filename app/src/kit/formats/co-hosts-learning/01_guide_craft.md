@@ -1,6 +1,6 @@
 ## 7. Craft rules
 
-- **The open** has a fixed shape, the one the voice example's open shows: one or two plain lines naming today's topic (only content every learner hears) and saying the co-hosts are learning it together, their names, and a short line to start. No scene, no characters, no host backgrounds. Under 60 words.
+- **The open** is a cold open: the sharpest line in content every learner hears (a line from a story, a striking detail), then the hosts' names and one short line to start. It is not an agenda read-out and does not list what's coming. It may say the co-hosts are learning this together. Under 60 words. Quoted story lines are allowed here only when that story's part plays in every listen. No host backgrounds.
 - **The first answer in a part defines the topic in plain words.** The other co-host then connects it to something the listener has probably seen at work.
 - **Attribute every fact, in plain words.** "The procedure says..." "According to the training..." The authority is the source, which is the claims ledger said out loud. Name a source only as the ledger names it. Never invent one.
 - **Split the reading.** Each co-host brings different parts of the material, so neither is the expert. Alternate who reports.
@@ -9,11 +9,11 @@
 - **The other co-host reacts and adds a layer** to what was just reported: a question, a connection to work, or one light joke. Short backchannels ("Yeah." "Right." "Huh.") are their own lines.
 - **Relate it to their own work.** One line, in each co-host's own words. It is characterization only and never carries a fact, a statistic, an injury or an outcome.
 - **Neither co-host speaks as an authority.** No "in my years," no "I've seen," no "trust me." They say what the training says.
-- **End with the practical list, said once,** if the ledger holds a real list or sequence. Then a light line and a short sign-off.
+- **End with the practical list, said once,** if the ledger holds a real list or sequence. Then one line that leaves the listener with a question.
 - **No speaker has more than two lines in a row.**
 - At least one concrete, visual detail per part (the specific thing in the specific place, not an abstract label).
 - Plain words, contractions, few idioms. Many listeners speak English as a second language.
-- **Answers sound like speech.** Mostly full spoken sentences, but vary the rhythm the way people do: a short fragment, a trailing thought or a quick restart is fine in an answer when a person would say it that way ("Pretty much my whole career. Different kinds of places, honestly."). Never a bare list of notes, and never telegraphic fragments with no connective. Short reactions are their own lines.
+- **Answers sound like speech.** Mostly full spoken sentences, but vary the rhythm the way people do: a short fragment, a trailing thought or a quick restart is fine in an answer when a person would say it that way ("Twenty years. Different kinds of places."). Never a bare list of notes, and never telegraphic fragments with no connective. A short reaction rides at the front of the next line, never its own turn.
 - **Every question connects to the answer before it.** Jargon is explained in the next line.
 - **Nothing is referred to before it's introduced.**
 - **At most one interruption per part, in the conversational parts only.** When a speaker jumps in, mark it in the text: a dash ending the interrupted line and a dash starting the interrupting one ("So the part people forget is—" / "—the label, right."). Use it only where a real listener would already know where the line is going. Never in a part about harm, never inside a character's own story, and never in a way that cuts off a ledger claim. The interrupted line must still make sense without its ending.

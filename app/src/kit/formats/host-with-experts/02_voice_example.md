@@ -4,14 +4,15 @@ This is a sample of register for a host with experts: how the voices sound. It i
 
 The open and the close are the one place the structure is fixed. Match their shape.
 
-## Open (fixed shape)
+## Cold open (sharpest line first, then names)
 
-DANA: Today we're talking about slicing and building a focaccia sandwich, and how it looks from different seats in the kitchen.
-DANA: I'm Dana. Let's get into it.
+DANA: "It looked fine from where I stood." Keep that line in mind.
+DANA: I'm Dana, and today it's focaccia sandwiches from a few seats in the kitchen. Let's get into it.
 
-## Close (fixed shape)
+## Close (a question or a callback, no thank-you)
 
-DANA: That's it for today. Thank you for listening, and we'll be back soon.
+DANA: Next time you slice one, look at it from the other side of the counter first.
+DANA: See you next time.
 
 ## Register sample
 

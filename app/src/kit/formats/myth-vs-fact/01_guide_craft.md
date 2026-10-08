@@ -1,6 +1,6 @@
 ## 7. Craft rules
 
-- **The open** has a fixed shape, the one the voice example's open shows: one or two plain lines naming today's topic and saying the hosts are checking what people say against what the training says (what's true, what isn't, and what depends), the hosts' names, and a short line to start. No myth is stated in the open. No scene, no characters, no host backgrounds. Under 60 words.
+- **The open** is a cold open: the sharpest line in content every learner hears (a line from a story, a striking detail), then the hosts' names and one short line to start. It is not an agenda read-out and does not list what's coming. No myth is stated as true in the open. Under 60 words. Quoted story lines are allowed here only when that story's part plays in every listen. No host backgrounds.
 - **The host intro** exists only when the cast guide gives the expert a background (the text under the expert's name). With no background there is no host intro: the open ends on its short line to start, and the first topic part follows. Never invent a background, a role question or a career for the expert. When there is a background, the host intro follows the open in the same asset, with no sting between them, so it plays for every learner. The expert is a co-host who has already introduced himself, so the host never introduces him as a guest ("you're the practitioner on the show"). The host says the expert's name and states one specific fact taken from the background text in the host's own words, as something she knows about him, and asks a short question that fits it. The expert answers in two or three sentences in his own words, using that background and nothing more, and the host says one short line to move on. 40 to 80 words. It names no topic part and promises nothing, because any topic part can be skipped; the first part's own signpost starts the content. The open's closing line is a plain hand-off that promises nothing, never "a quick hello" or "first, ...". Characterization only: it never carries a fact, and the background is not repeated in other parts except as a short aside that backs up a point.
 - **One claim per part, framed as a question.** The part's first exchange asks it ("Can you...?" "Is it true that...?"), so the part works whatever played before it.
 - **Say the myth once, in a worker's voice, and never again.** "I always heard you can recap it if you're careful." After that, call it "that" or "the shortcut." Repeating a myth makes it more familiar.
@@ -11,8 +11,7 @@
 - **No speaker has more than two lines in a row.**
 - At least one concrete, visual detail per part (the specific thing in the specific place, not an abstract label).
 - Plain words, contractions, few idioms. Many listeners speak English as a second language.
-- **Answers sound like speech.** Mostly full spoken sentences, but vary the rhythm the way people do: a short fragment, a trailing thought or a quick restart is fine in an answer when a person would say it that way ("Pretty much my whole career. Different kinds of places, honestly."). Never a bare list of notes, and never telegraphic fragments with no connective. Short reactions are their own lines.
-- **Both hosts improvise a little.** Light fillers and softeners appear once or twice per part per speaker, a different one each time. Never "uhh." Not in every line.
+- **Answers sound like speech.** Mostly full spoken sentences, but vary the rhythm the way people do: a short fragment, a trailing thought or a quick restart is fine in an answer when a person would say it that way ("Twenty years. Different kinds of places."). Never a bare list of notes, and never telegraphic fragments with no connective. A short reaction rides at the front of the next line, never its own turn.
 - **Every question connects to the answer before it.**
 - **Nothing is referred to before it's introduced.** Never "the rule" until someone has said which rule.
 - **At most one interruption per part, in the conversational parts only.** When a speaker jumps in, mark it in the text: a dash ending the interrupted line and a dash starting the interrupting one ("So the part people forget is—" / "—the label, right."). Use it only where a real listener would already know where the line is going. Never in a part about harm, never inside a character's own story, and never in a way that cuts off a ledger claim. The interrupted line must still make sense without its ending.
@@ -31,7 +30,6 @@
 - Dana says what she'd do differently now.
 - The fact, said again in plain words.
 - A question left with the listener.
-- Dana's short sign-off to Ray. Once per listen.
 
 ## 8. Length
 

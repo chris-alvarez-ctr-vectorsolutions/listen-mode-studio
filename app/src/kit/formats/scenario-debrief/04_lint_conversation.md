@@ -7,8 +7,8 @@
 | Ray's explanation inside the story | One or two sentences, at the moment it matters |
 | Dana's lines between character lines | One or two sentences at a time |
 | Each way in and way out | Used once per listen |
-| Average sentence length | Under about 15 words, with a mix of short and long |
-| Sentences over 20 words | None in dialogue |
+| Turn length | Mixed: fragments, short and long turns. Not uniform |
+| Sentences over 25 words in dialogue | None |
 | Concrete, visual details per part | At least one |
 | Light or funny moments per part | One at most, none in a part about harm |
 | Delivery tags per part | Four to eight |
@@ -36,3 +36,7 @@
 - [ ] Read aloud, every line sounds like something a person would say out loud.
 - [ ] At most one interruption per part, marked with dashes, never in a part about harm or inside a character's story, and never cutting off a ledger claim.
 - [ ] Nobody asks a character a question, speaks to a character, or waits for an answer. A short story (about 80 words or fewer) may be told by the host or expert instead of a character voice.
+- [ ] No standalone one-word reaction turn. Reactions ride on the front of the same speaker's next line.
+- [ ] Dana has turns other than questions (a reaction, a scenario she sets up, what she'd do differently). A wrong assumption she voices is corrected in full in the next turn and is backed by the ledger.
+- [ ] No fact, list or statistic inside a character's story. The facts follow the story.
+- [ ] No "before the show" or "off mic" setup, no host thanking another for explaining, no canned personality line.

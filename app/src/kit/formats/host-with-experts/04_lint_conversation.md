@@ -4,10 +4,10 @@
 | --- | --- |
 | Expert's share of words in an expert part | About two-thirds |
 | Narration between expert lines | Two to four sentences |
-| Dana restatements per part | One at most |
+| Restatements (a point repeated in the same or next turn, or a figure in a second form) | None |
 | Each way in and way out | Used once per listen |
-| Average sentence length | Under about 15 words, with a mix of short and long |
-| Sentences over 20 words | None in dialogue |
+| Turn length | Mixed: fragments, short and long turns. Not uniform |
+| Sentences over 25 words in dialogue | None |
 | Concrete, visual details per part | At least one |
 | Light or funny moments per part | One at most |
 | Delivery tags per part | Four to eight |
@@ -35,3 +35,7 @@
 - [ ] No two parts in a listen share the same overall shape.
 - [ ] Read aloud, every line sounds like something a person would say out loud.
 - [ ] At most one interruption per part, marked with dashes, never in a part about harm or inside a character's story, and never cutting off a ledger claim.
+- [ ] No standalone one-word reaction turn. Reactions ride on the front of the same speaker's next line.
+- [ ] Dana has turns other than questions (a reaction, a scenario she sets up, what she'd do differently). A wrong assumption she voices is corrected in full in the next turn and is backed by the ledger.
+- [ ] No fact, list or statistic inside a character's story. The facts follow the story.
+- [ ] No "before the show" or "off mic" setup, no host thanking another for explaining, no canned personality line.

@@ -12,7 +12,7 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 - Asks the question the listener is thinking, including the obvious one.
 - Genuinely doesn't know the answer. She is curious, not a straight man.
 - Can admit she has made the same mistake herself.
-- Paraphrases a point at most once per part, and only when she adds something.
+- Paraphrases a point at most once per part, and only when she adds something. Otherwise she reacts, sets up scenarios, says what she would do differently, and may voice a common wrong assumption that the expert corrects in his next turn (see conversation feel rules).
 
 **Ray (expert)**
 - {{background:expert}}
@@ -23,6 +23,6 @@ Every listen: **open**, then the topic parts in a fixed order with a sting betwe
 
 **Characters (for example, Jacob)**
 - Dramatized people who tell one story in short, concrete sentences.
-- Appear only in their own part. Never mentioned in the open or another part.
-- They never explain the lesson. The host carries any facts around them.
+- Appear only in their own part. Never mentioned in another part. The open may quote them only when their part plays in every listen.
+- They never explain the lesson, and no fact, list or statistic appears inside their story. The story finishes, then the expert gives the facts.
 
