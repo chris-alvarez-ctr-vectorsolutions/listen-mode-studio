@@ -50,7 +50,7 @@ Runtime = words / 140, plus holds, plus about 3 seconds per sting.
 - Render text holds spoken words, bracketed delivery tags and punctuation only. SFX, beds, holds and stings live on the cue sheet.
 - The speaker label (NARRATOR:) maps every line to the one voice. Send only the text after the colon.
 - Tags: about four to eight per part, only where the meaning or emotion changes, never on consecutive lines. Place a tag just before the line it shapes, or just after a line as a reaction ([sighs], [laughs]). Mostly on pivot lines and questions to the listener. Keep to the voice's palette. A tag may be two short descriptive words in that voice's register ([warm, amused], [dry, deadpan]); never staging or sound tags ([music], [standing]).
-  - Narrator: [matter-of-fact] [thoughtful] [warmly] [curious] [dry] [quietly] [amused] [reassuring]
+  - Narrator: [matter-of-fact] [thoughtful] [warmly] [curious] [dry] [amused] [reassuring]
 - Emphasis: CAPS on one or two words per part. No SSML.
 - Short pauses: an ellipsis, a dash or punctuation (never [pause] or SSML break tags), especially right before a pivot line and right after a question to the listener. Anything 2 seconds or longer is a hold on the cue sheet.
 - Spell out as spoken: numbers ("more than nine out of ten"), initialisms (H-I-V, P-P-E, U-S).

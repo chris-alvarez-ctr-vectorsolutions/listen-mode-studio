@@ -80,3 +80,12 @@ export function chunkLines(lines, limit = 1900) {
 
 export const speakersIn = parts =>
   [...new Set(parts.flatMap(p => p.segments.flatMap(s => s.lines.map(l => l.speaker))))];
+
+// The hosts never get a quiet or soft delivery tag ([quietly], [laughs softly]). Strips them from the named speakers
+// even if the model adds one. A character's tags are left alone.
+const BANNED_TAG = /\[[^\]]*\b(?:quiet(?:ly)?|soft(?:ly)?)\b[^\]]*\]\s*/gi;
+export function stripBannedTags(parts, hostNames = []) {
+  const hosts = new Set(hostNames.map(n => n.toUpperCase()));
+  const clean = lines => lines.map(l => (hosts.has(String(l.speaker).toUpperCase()) ? { ...l, text: l.text.replace(BANNED_TAG, '') } : l));
+  return parts.map(p => ({ ...p, segments: (p.segments || []).map(s => ({ ...s, lines: clean(s.lines || []) })) }));
+}

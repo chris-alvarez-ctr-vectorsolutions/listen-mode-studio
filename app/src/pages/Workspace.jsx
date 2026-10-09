@@ -4,7 +4,7 @@ import { getModule, loadSettings, saveModule } from '../lib/store.js';
 import { addRuleToKit, fillStagePrompt, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
 import { composeSeed, fieldsFor, missingRequired, seedFieldsOf } from '../lib/seed.js';
-import { parsePerformance, scriptOnly } from '../lib/script.js';
+import { parsePerformance, scriptOnly, stripBannedTags } from '../lib/script.js';
 import { applySeams, parseSeams, seamBlock } from '../lib/seams.js';
 import SeamsResult from '../components/SeamsResult.jsx';
 import { inAudio, normalizeObjective, pathwayBlock, planParts } from '../lib/pathways.js';
@@ -28,6 +28,7 @@ import { audioStale, staleStages, stampFor } from '../lib/staleness.js';
 import StageGuide from '../components/StageGuide.jsx';
 import { resolveSetup, setupSummary } from '../lib/definitions.js';
 const convId = setup => resolveSetup(setup).conversation.id;
+const hostNames = setup => resolveSetup(setup).conversation.speakers.map(x => x.name);
 
 // Elapsed time and words so far, so a long generation can be told apart from a dead one.
 function Working({ since, live, note, status, sent, label = 'Working…' }) {
@@ -188,14 +189,14 @@ export default function Workspace() {
       }
       if (stage.kind === 'script') patch.currentScript = reply;
       if (stage.kind === 'json') {
-        try { patch.parts = parsePerformance(reply); }
+        try { const pf = parsePerformance(reply); patch.parts = { ...pf, parts: stripBannedTags(pf.parts, hostNames(mod.setup)) }; }
         catch (e) { setError(`Couldn't read the script with delivery directions: ${e.message}. Run the stage again.`); }
         // A new performance pass replaces the parts, so bridges written for the old ones are gone: run Seams again.
         const { seams: _gone, ...keep } = patch.stages;
         patch.stages = keep;
       }
       if (stage.kind === 'seams') {
-        try { patch.parts = applySeams(cur().parts, parseSeams(reply)); }
+        try { const sm = parseSeams(reply); const strip = list => list.map(x => ({ ...x, lines: stripBannedTags([{ segments: [{ lines: x.lines }] }], hostNames(mod.setup))[0].segments[0].lines })); patch.parts = applySeams(cur().parts, { bridges: strip(sm.bridges), closers: strip(sm.closers) }); }
         catch (e) { setError(`Couldn't read the seams: ${e.message}. Run the stage again.`); }
       }
       await update(patch);

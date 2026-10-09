@@ -46,9 +46,9 @@ Runtime = words / 140, plus holds, plus about 3 seconds per sting.
 - Model: Eleven v4 (same tag handling as v3). Start speed at 0.95.
 - Render text holds spoken words, bracketed delivery tags and punctuation only. SFX, beds, holds and stings live on the cue sheet.
 - Speaker labels (DANA:, EXPERT A:, EXPERT B:, EXPERT C:) map lines to voices. The label is internal and never spoken. Send only the text after the colon.
-- Tags: about four to eight per part, only where the meaning or emotion changes, never on consecutive lines. Place a tag just before the line it shapes, or just after a line as a reaction ([sighs], [laughs]). Keep to each voice's palette. A tag may be two short descriptive words in that voice's register ([warm, amused], [dry, deadpan]); never staging or sound tags ([music], [standing]).
-  - Experts: [dry] [matter-of-fact] [thoughtful] [warmly] [laughs] [quietly] [amused] [reassuring] [sighs]
-  - Dana: [playful] [skeptical] [curious] [surprised] [sighs] [laughs] [quietly] [amused] [warmly] [jumping in]
+- Tags: about four to eight per part, only where the meaning or emotion changes, never on consecutive lines. Place a tag just before the line it shapes, or just after a line as a reaction ([sighs], [laughs]). Keep to each voice's palette. Never [quietly], [softly] or a variant on a host, expert or narrator. A tag may be two short descriptive words in that voice's register ([warm, amused], [dry, deadpan]); never staging or sound tags ([music], [standing]).
+  - Experts: [dry] [matter-of-fact] [thoughtful] [warmly] [laughs] [amused] [reassuring] [sighs]
+  - Dana: [playful] [skeptical] [curious] [surprised] [sighs] [laughs] [amused] [warmly] [jumping in]
 - Emphasis: CAPS on one or two words per part. No SSML.
 - Short pauses: an ellipsis, a dash or punctuation (never [pause] or SSML break tags). Anything 2 seconds or longer is a hold on the cue sheet.
 - Spell out as spoken: numbers ("more than nine out of ten"), initialisms (H-I-V, P-P-E, U-S).

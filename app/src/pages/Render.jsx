@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import JSZip from 'jszip';
 import { getAudio, getModule, loadSettings, saveAudio, saveModule } from '../lib/store.js';
-import { chunkLines, partFromText, speakersIn } from '../lib/script.js';
+import { chunkLines, partFromText, speakersIn, stripBannedTags } from '../lib/script.js';
+import { resolveSetup } from '../lib/definitions.js';
 import { dialogue } from '../lib/eleven.js';
 import { blobToSamples, decode, join, mixTheme, wavBlob } from '../lib/audio.js';
 import { THEME_FOR, themeBuffer } from '../lib/theme.js';
@@ -95,7 +96,9 @@ export default function Render() {
         marks.push({ id: seg.id, start: t });
         for (const chunk of chunkLines(seg.lines)) {
           n += 1; say(`Rendering ${n} of ${total}`);
-          const inputs = chunk.map(l => ({ text: l.text, voice_id: voiceFor(l.speaker) }));
+          // Last guard, so lines saved before the rule (or typed in) never send a quiet or soft tag for a host.
+          const safe = stripBannedTags([{ segments: [{ lines: chunk }] }], resolveSetup(m.setup).conversation.speakers.map(x => x.name))[0].segments[0].lines;
+          const inputs = safe.map(l => ({ text: l.text, voice_id: voiceFor(l.speaker) }));
           const { audio, requestId, timings } = await dialogue(inputs, { previousRequestIds: prior });
           if (requestId) prior.push(requestId);
           try { cues.push(...cuesFromResponse(inputs, chunk.map(l => l.speaker), timings, t)); } catch { /* captions are optional */ }
