@@ -477,19 +477,27 @@ Don't invent objectives. Reply with the JSON array only.`;
                 );
               })}
               <li className="mt-4 px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Variants</li>
-              {family.filter(x => x.id !== m.id).map(x => (
-                <li key={x.id}>
-                  <Link className="block rounded-md border border-rule bg-paper px-3 py-2 text-sm hover:border-onair" to={`/m/${x.id}`}>
-                    <span className="block font-medium">{versionLabel(x.setup)}</span>
-                    <span className="block text-xs text-muted">{progressOf(x)}{variantBehind(x, m) ? ' · ⚠ inputs changed, needs updating' : ''}</span>
-                  </Link>
-                </li>
-              ))}
+              {(() => {
+                const kids = family.filter(x => x.id !== m.id).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                const fmt = x => resolveSetup(x.setup).conversation?.name || 'Variant';
+                const seen = {};
+                return kids.map(x => {
+                  const same = kids.filter(y => fmt(y) === fmt(x)).length > 1;
+                  seen[fmt(x)] = (seen[fmt(x)] || 0) + 1;
+                  const status = variantBehind(x, m) ? '⚠ update' : progressOf(x);
+                  return (
+                    <li key={x.id}>
+                      <Link title={versionLabel(x.setup)} className="flex items-baseline justify-between gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-panel" to={`/m/${x.id}`}>
+                        <span className="truncate">{fmt(x)}{same ? ` ${seen[fmt(x)]}` : ''}</span>
+                        <span className={`shrink-0 text-xs ${variantBehind(x, m) ? 'text-amber-900' : 'text-muted'}`}>{status}</span>
+                      </Link>
+                    </li>
+                  );
+                });
+              })()}
               {ownRun && <li className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">This module still holds a script from before variants. <button className="underline" onClick={moveRun}>Move it into a variant</button></li>}
               <li>
-                <button className={`w-full rounded-md border border-dashed px-3 py-2 text-left text-sm ${active === 'newversion' ? 'border-ink bg-ink text-white' : 'border-rule hover:border-onair'}`} onClick={() => { setNv(null); setActive('newversion'); }}>＋ New variant
-                  <span className={`block text-xs ${active === 'newversion' ? 'opacity-80' : 'text-muted'}`}>{canMakeVariant(m) ? 'Choose a show format, industry and role' : 'Approve the claims ledger first'}</span>
-                </button>
+                <button className={`w-full rounded-md px-3 py-1.5 text-left text-sm ${active === 'newversion' ? 'bg-ink text-white' : 'text-muted hover:bg-panel hover:text-ink'}`} onClick={() => { setNv(null); setActive('newversion'); }}>＋ New variant</button>
               </li>
             </>
           )}
