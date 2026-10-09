@@ -53,6 +53,10 @@ export async function deleteModuleAudio(id) {
   const ks = (await keys()).filter(k => String(k).startsWith(`mas.audio:${id}:`));
   await Promise.all(ks.map(k => del(k)));
 }
+export async function moveModuleAudio(from, to) {
+  const ks = (await keys()).filter(k => String(k).startsWith(`mas.audio:${from}:`));
+  for (const k of ks) { await set(String(k).replace(`mas.audio:${from}:`, `mas.audio:${to}:`), await get(k)); await del(k); }
+}
 export const getAudio = (mid, pid) => get(AUDIO(mid, pid));
 export const saveAudio = (mid, pid, blob) => set(AUDIO(mid, pid), blob);
 export const deleteAudio = (mid, pid) => del(AUDIO(mid, pid));

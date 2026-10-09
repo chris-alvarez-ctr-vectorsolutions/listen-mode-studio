@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, Fragment } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { deleteModuleAudio, getModule, listModules, loadSettings, saveModule } from '../lib/store.js';
+import { deleteModuleAudio, getModule, listModules, loadSettings, moveModuleAudio, saveModule } from '../lib/store.js';
 import { addRuleToKit, fillStagePrompt, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
 import { composeSeed, fieldsFor, missingRequired, seedFieldsOf } from '../lib/seed.js';
 import { parsePerformance, scriptOnly, stripBannedTags } from '../lib/script.js';
 import { applySeams, parseSeams, seamBlock } from '../lib/seams.js';
-import { canMakeVariant, makeVariant, resyncVariant, variantBehind } from '../lib/variants.js';
+import { canMakeVariant, hasOwnRun, makeVariant, moveRunToVersion, resyncVariant, variantBehind, versionLabel, versionName } from '../lib/variants.js';
 import SeamsResult from '../components/SeamsResult.jsx';
 import { inAudio, normalizeObjective, pathwayBlock, planParts } from '../lib/pathways.js';
 import { parseSeedTemplate, templatePrompt } from '../lib/seedTemplate.js';
@@ -137,8 +137,8 @@ export default function Workspace() {
   // The module holds the inputs. A version (a child module) holds one listening experience. A module made before
   // versions existed keeps its own listening experience, so nothing it already did disappears.
   const isVersion = !!m.parentId;
-  const ownRun = !isVersion && (Object.keys(m.stages || {}).some(k => k !== 'ledger' && m.stages[k]?.output) || !!m.parts);
-  const showExperience = isVersion || ownRun;
+  const ownRun = hasOwnRun(m);          // a module made before versions existed still holds its own script
+  const showExperience = isVersion;     // the module itself is only the inputs
   const no = s => (isVersion ? s.n - 2 : s.n);      // a version numbers its own steps from 1
   const progressOf = x => { const last = [...stages].reverse().find(t => t.id !== 'ledger' && x.stages?.[t.id]?.output); return x.parts?.assembly?.length ? 'Script ready' : last ? `${last.title} done` : 'Not started'; };
   const update = async patch => { const next = { ...cur(), ...patch }; setBoth(next); await saveModule(next); return next; };
@@ -239,6 +239,14 @@ export default function Workspace() {
   const approveAndNext = async stage => {
     if (st(stage.id).status !== 'approved') { const done = approve(stage); if (!done) return; await done; }
     runNext(stage);
+  };
+  const moveRun = async () => {
+    if (!confirm('Move this module\'s plan, script and audio into a new version? The module keeps its seed and claims ledger.')) return;
+    const { version, root } = moveRunToVersion(cur());
+    await saveModule(version);
+    await moveModuleAudio(cur().id, version.id);
+    await update(root);
+    navigate(`/m/${version.id}`);
   };
   const nextLabel = stage => { const nx = nextOf(stage); return nx ? `Next: ${no(nx)}. ${nx.title} ›` : ''; };
   const skip = stage => update({ stages: { ...cur().stages, [stage.id]: { status: 'skipped', output: '' } } });
@@ -451,8 +459,8 @@ Don't invent objectives. Reply with the JSON array only.`;
     <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
       <aside>
         <Link to="/" className="text-sm text-muted hover:text-ink">All modules</Link>
-        {isVersion && <p className="mt-2 text-xs uppercase tracking-wide text-muted">Version of {parent ? <Link className="underline" to={`/m/${parent.id}`}>{parent.name}</Link> : 'a module'}</p>}
-        <h1 className="mt-1 text-xl font-semibold leading-snug">{m.name}</h1>
+        {isVersion && parent && <p className="mt-2 text-sm"><Link className="text-muted hover:text-ink" to={`/m/${parent.id}`}>← {parent.name}</Link></p>}
+        <h1 className="mt-1 text-xl font-semibold leading-snug">{isVersion ? versionLabel(m.setup) : m.name}</h1>
         {m.description?.trim() && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{m.description}</p>}
         <ol className="mt-6 space-y-1">
           {!isVersion && (
@@ -470,27 +478,29 @@ Don't invent objectives. Reply with the JSON array only.`;
                 );
               })}
               <li className="mt-4 px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Versions</li>
-              <li className="px-1 pb-1 text-xs text-muted">Each version takes these inputs and gives them one listening experience: a show type, an industry and an audience.</li>
               {family.filter(x => x.id !== m.id).map(x => (
                 <li key={x.id}>
                   <Link className="block rounded-md border border-rule bg-paper px-3 py-2 text-sm hover:border-onair" to={`/m/${x.id}`}>
-                    <span className="block font-medium">{x.name}</span>
+                    <span className="block font-medium">{versionLabel(x.setup)}</span>
                     <span className="block text-xs text-muted">{progressOf(x)}{variantBehind(x, m) ? ' · ⚠ inputs changed, needs updating' : ''}</span>
                   </Link>
                 </li>
               ))}
+              {ownRun && <li className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">This module still holds a script from before versions. <button className="underline" onClick={moveRun}>Move it into a version</button></li>}
               <li>
                 <button className={`w-full rounded-md border border-dashed px-3 py-2 text-left text-sm ${active === 'newversion' ? 'border-ink bg-ink text-white' : 'border-rule hover:border-onair'}`} onClick={() => { setNv(null); setActive('newversion'); }}>＋ New version
-                  <span className={`block text-xs ${active === 'newversion' ? 'opacity-80' : 'text-muted'}`}>{canMakeVariant(m) ? 'Start by choosing a show type and audience' : 'Approve the claims ledger first'}</span>
+                  <span className={`block text-xs ${active === 'newversion' ? 'opacity-80' : 'text-muted'}`}>{canMakeVariant(m) ? 'Choose a show format, industry and role' : 'Approve the claims ledger first'}</span>
                 </button>
               </li>
             </>
           )}
           {isVersion && (
             <>
-              <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>Show setup
-                <span className={`block text-xs ${active === 'seed' ? 'opacity-80' : 'text-muted'}`}>{(() => { const r = resolveSetup(m.setup); return [r.conversation?.name, r.industry?.name].filter(Boolean).join(' · '); })()}</span></button></li>
-              {parent && variantBehind(m, parent) && <li className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">⚠ The inputs changed in {parent.name}. Open Show setup to update.</li>}
+              <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'border border-rule bg-paper hover:border-onair'}`} onClick={() => setActive('seed')}>
+                <span className="block font-medium">Basics</span>
+                {(() => { const r = resolveSetup(m.setup); return [r.conversation?.name, r.industry?.name, r.role?.name].filter(Boolean).map(t => <span key={t} className={`block text-xs ${active === 'seed' ? 'opacity-80' : 'text-muted'}`}>{t}</span>); })()}
+              </button></li>
+              {parent && variantBehind(m, parent) && <li className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">⚠ The inputs changed in {parent.name}. Update this version.</li>}
             </>
           )}
           {showExperience && (
@@ -539,30 +549,7 @@ Don't invent objectives. Reply with the JSON array only.`;
 
         {active === 'seed' && m.parentId && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold">Show setup</h2>
-              <p className="text-sm text-muted">Choose the show type and who it is for. The content comes from the inputs in {parent ? <Link className="underline" to={`/m/${parent.id}`}>{parent.name}</Link> : 'the module'}{m.ledgerSigned ? ', with its signed-off claims ledger' : ''}.</p>
-            </div>
-            <div>
-              <label className="label" htmlFor="module-name">Version name</label>
-              <input id="module-name" className="field" value={m.name}
-                onChange={e => setBoth({ ...cur(), name: e.target.value })}
-                onBlur={commitName}
-                onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }} />
-              <label className="label mt-4" htmlFor="module-note">Note</label>
-              <textarea id="module-note" className="field" rows={2} placeholder="What this version tries: the show type, the audience…"
-                value={m.description || ''}
-                onChange={e => setBoth({ ...cur(), description: e.target.value })}
-                onBlur={() => saveModule(cur())} />
-            </div>
-            <SetupCard setup={m.setup} onChange={setup => update({ setup })} />
-            <section className="rounded-md border border-rule bg-paper p-4 text-sm">
-              <h3 className="font-semibold">Inputs this version uses</h3>
-              <p className="mt-1 text-muted">{objectiveCount} objective{objectiveCount === 1 ? '' : 's'} in the pathway table · {m.stages.ledger?.status === 'skipped' ? 'ledger skipped' : 'claims ledger approved'} · {m.ledgerSigned ? 'signed off by the SME' : 'not signed off yet'}.
-                {parent && <> To change any of it, go to <Link className="underline" to={`/m/${parent.id}`}>{parent.name}</Link>; every version will then ask to update.</>}</p>
-              {m.stages.ledger?.output && <details className="mt-2"><summary className="cursor-pointer">Show the claims ledger</summary><div className="mt-2"><Markdown text={m.stages.ledger.output} /></div></details>}
-              <details className="mt-2"><summary className="cursor-pointer">Show the seed text</summary><pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded bg-panel p-3 text-xs">{m.seed || '(none)'}</pre></details>
-            </section>
+            <SetupCard title="Basics" hint="" setup={m.setup} onChange={setup => update({ setup, ...(parent ? { name: versionName(parent, setup) } : {}) })} />
             <div className="flex justify-end border-t border-rule pt-4">
               <button className="btn-primary" onClick={() => setActive('plan')}>Next: {no(stages[1])}. {stages[1].title} ›</button>
             </div>
@@ -570,27 +557,23 @@ Don't invent objectives. Reply with the JSON array only.`;
         )}
 
         {active === 'newversion' && !isVersion && (() => {
-          const v = nv || { name: `${m.name} · `, setup: m.setup };
+          const v = nv || { setup: m.setup };
           const ready = canMakeVariant(m);
           return (
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold">New version</h2>
-                <p className="text-sm text-muted">A version takes this module's inputs (the seed, the pathway table and the claims ledger) and gives them one listening experience. Start by choosing the show type and who it is for.</p>
+                <p className="text-sm text-muted">Choose the show format and who it is for. The version uses this module's seed and claims ledger.</p>
               </div>
               {!ready && <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Approve or skip the claims ledger first, so a version has solid inputs to build on.</p>}
-              <div>
-                <label className="label" htmlFor="nv-name">Version name</label>
-                <input id="nv-name" className="field" value={v.name} onChange={e => setNv({ ...v, name: e.target.value })} />
-              </div>
-              <SetupCard setup={v.setup} onChange={setup => setNv({ ...v, setup })} />
+              <SetupCard title="Basics" hint="" setup={v.setup} onChange={setup => setNv({ setup })} />
               <div className="flex justify-end border-t border-rule pt-4">
-                <button className="btn-primary" disabled={!ready || !v.name.trim()} onClick={async () => {
+                <button className="btn-primary" disabled={!ready} onClick={async () => {
                   await saveModule(cur());
-                  const created = await saveModule(makeVariant(cur(), v.name.trim(), v.setup));
+                  const created = await saveModule(makeVariant(cur(), v.setup));
                   setNv(null);
                   navigate(`/m/${created.id}?stage=plan`);
-                }}>Create the version and start its plan ›</button>
+                }}>Create the version ›</button>
               </div>
             </div>
           );
@@ -616,7 +599,6 @@ Don't invent objectives. Reply with the JSON array only.`;
                 onBlur={() => saveModule(cur())} />
               <p className="mt-1 text-xs text-muted">For you and anyone you hand the module to. It is saved with the module and its export, and is never sent to the AI.</p>
             </div>
-            {ownRun && <SetupCard setup={m.setup} onChange={setup => update({ setup })} />}
             <section className="space-y-4 rounded-md border border-rule bg-paper p-4">
               <div>
                 <h3 className="font-semibold">Step 1 · Fill in the details from your own AI chat</h3>

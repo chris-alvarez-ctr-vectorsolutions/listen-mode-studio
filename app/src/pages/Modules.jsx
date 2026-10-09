@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { deleteModule, listModules, newModule, saveModule } from '../lib/store.js';
 import { download, readFileText } from '../lib/download.js';
-import { resolveSetup, startingSetup } from '../lib/definitions.js';
-import { canMakeVariant } from '../lib/variants.js';
+import { startingSetup } from '../lib/definitions.js';
+import { canMakeVariant, versionLabel } from '../lib/variants.js';
 
 export default function Modules() {
   const [mods, setMods] = useState([]);
@@ -30,7 +30,7 @@ export default function Modules() {
   // Variants sit under their base module. A variant whose base has been deleted is listed on its own.
   const ids = new Set(mods.map(m => m.id));
   const rows = mods.filter(m => !m.parentId || !ids.has(m.parentId)).flatMap(m => [{ m, child: false }, ...mods.filter(x => x.parentId === m.id).map(x => ({ m: x, child: true }))]);
-  const variantLabel = m => { const r = resolveSetup(m.setup); return [r.industry?.name, r.conversation?.name].filter(Boolean).join(' · '); };
+  const variantLabel = m => versionLabel(m.setup);
 
   return (
     <div className="grid gap-10 md:grid-cols-[1fr_320px]">
@@ -42,8 +42,8 @@ export default function Modules() {
           {rows.map(({ m, child }) => (
             <li key={m.id} className={`flex items-center justify-between gap-4 p-4 ${child ? 'bg-paper pl-10' : ''}`}>
               <div>
-                <Link to={`/m/${m.id}`} className="font-medium hover:underline">{m.name}</Link>
-                {child && <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-xs text-muted ring-1 ring-rule">Version · {variantLabel(m)}</span>}
+                <Link to={`/m/${m.id}`} className="font-medium hover:underline">{child ? variantLabel(m) : m.name}</Link>
+                {child && <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-xs text-muted ring-1 ring-rule">Version</span>}
                 {m.description?.trim() && <div className="mt-0.5 line-clamp-2 whitespace-pre-wrap text-sm text-muted">{m.description}</div>}
                 <div className="text-sm text-muted">Updated {new Date(m.updatedAt).toLocaleString()}</div>
               </div>

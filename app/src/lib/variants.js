@@ -2,6 +2,7 @@
 // module, and goes on to its own plan, script and audio with its own industry, learner role and conversation type.
 // Everything signed off before the ledger applies to every variant, so the child carries the base's sign-off. A child
 // remembers a fingerprint of the base's inputs, so it can say when the base has moved on.
+import { resolveSetup } from './definitions.js';
 import { newModule } from './store.js';
 
 const hash = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0; return String(h); };
@@ -31,8 +32,28 @@ function inherited(p) {
   };
 }
 
-export function makeVariant(parent, name, setup = parent.setup) {
-  return { ...newModule(name, clone(setup)), ...inherited(parent), parentId: parent.id };
+// A version is named by what it is: the show format, the industry and the learner role. There is nothing to type.
+export function versionLabel(setup) {
+  const r = resolveSetup(setup);
+  return [r.conversation?.name, r.industry?.name, r.role?.name].filter(Boolean).join(' · ');
+}
+export const versionName = (root, setup) => `${root.name} · ${versionLabel(setup)}`;
+
+export function makeVariant(parent, setup = parent.setup) {
+  return { ...newModule(versionName(parent, setup), clone(setup)), ...inherited(parent), parentId: parent.id };
+}
+
+// A module made before versions existed has its own plan, script and audio. Move all of that into a version, and leave
+// the module with the inputs only. Returns { version, root }. The caller moves the audio.
+export const hasOwnRun = m => !m.parentId && (Object.keys(m.stages || {}).some(k => k !== 'ledger' && m.stages[k]?.output) || !!m.parts);
+export function moveRunToVersion(root) {
+  const version = { ...clone(root), id: crypto.randomUUID(), parentId: root.id, parentStamp: inputsStamp(root), name: versionName(root, root.setup), createdAt: Date.now() };
+  const kept = inherited(root);
+  const stripped = {
+    ...root, thread: kept.thread, stages: kept.stages, itemState: kept.itemState,
+    currentScript: '', parts: null, notes: [], timings: {}, runLog: (root.runLog || []).filter(r => r.stage === 'ledger'),
+  };
+  return { version, root: stripped };
 }
 
 // Takes the base's current inputs and clears everything the child built on the old ones (plan onward, audio is

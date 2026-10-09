@@ -13,7 +13,7 @@ const ROWS = [
 ];
 
 // The three choices that shape a module's voice, plus the background for each speaker who needs one.
-export default function SetupCard({ setup, onChange }) {
+export default function SetupCard({ setup, onChange, title = 'Show setup', hint = 'Who this is for, where it is set, and how the show is built. Pick from the list or add your own.' }) {
   const [lib, setLib] = useState(loadLibrary);
   const [adding, setAdding] = useState(null);   // { kind, draft }
   const r = resolveSetup(setup, lib);
@@ -52,8 +52,8 @@ export default function SetupCard({ setup, onChange }) {
   return (
     <div className="space-y-4 rounded-md border border-rule bg-paper p-4">
       <div>
-        <h3 className="font-semibold">Show setup</h3>
-        <p className="text-sm text-muted">Who this is for, where it is set, and how the show is built. Pick from the list or add your own.</p>
+        <h3 className="font-semibold">{title}</h3>
+        {hint && <p className="text-sm text-muted">{hint}</p>}
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         {ROWS.map(row => {
