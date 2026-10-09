@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, Fragment } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { deleteModuleAudio, getModule, loadSettings, saveModule } from '../lib/store.js';
 import { addRuleToKit, fillStagePrompt, loadKit, systemPrompt } from '../lib/kit.js';
@@ -6,7 +6,7 @@ import { callClaude } from '../lib/claude.js';
 import { composeSeed, fieldsFor, missingRequired, seedFieldsOf } from '../lib/seed.js';
 import { parsePerformance, scriptOnly, stripBannedTags } from '../lib/script.js';
 import { applySeams, parseSeams, seamBlock } from '../lib/seams.js';
-import { resyncVariant, variantBehind } from '../lib/variants.js';
+import { canMakeVariant, makeVariant, resyncVariant, variantBehind } from '../lib/variants.js';
 import SeamsResult from '../components/SeamsResult.jsx';
 import { inAudio, normalizeObjective, pathwayBlock, planParts } from '../lib/pathways.js';
 import { parseSeedTemplate, templatePrompt } from '../lib/seedTemplate.js';
@@ -442,16 +442,33 @@ Don't invent objectives. Reply with the JSON array only.`;
         <h1 className="mt-2 text-xl font-semibold leading-snug">{m.name}</h1>
         {m.description?.trim() && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{m.description}</p>}
         <ol className="mt-6 space-y-1">
+          <li className="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">{m.parentId ? 'Inputs (from the base module)' : 'Inputs'}</li>
           <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>1. Seed</button></li>
           {stages.map((s, i) => {
             const status = st(s.id).status;
             const mark = m.parentId && s.id === 'ledger' ? 'from base' : applying && s.id === 'editor' ? 'applying…' : stale[s.id] ? '⟳ outdated' : status === 'approved' ? (s.id === 'validity' && st('editor').applied?.count ? '✓ edited' : '✓') : status === 'skipped' ? 'skipped' : status === 'ready' ? 'review' : '';
             return (
-              <li key={s.id}>
+              <Fragment key={s.id}>
+              {s.id === 'plan' && (
+                <li className="mt-3 px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Listening experience
+                  {!m.parentId && canMakeVariant(m) && (
+                    <button className="mt-1 block w-full rounded-md border border-rule bg-panel px-2 py-1.5 text-left text-xs font-normal normal-case tracking-normal text-ink hover:border-onair" onClick={async () => {
+                      const name = prompt('Name this variant', `${m.name} · variant`);
+                      if (!name?.trim()) return;
+                      await saveModule(cur());
+                      const v = await saveModule(makeVariant(cur(), name.trim()));
+                      navigate(`/m/${v.id}`);
+                    }}>Inputs are ready. Make a variant for another show type or audience ›</button>
+                  )}
+                </li>
+              )}
+              <li>
                 <button disabled={!unlocked(i)} className={`flex w-full justify-between rounded-md px-3 py-2 text-left text-sm disabled:opacity-40 ${active === s.id ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive(s.id)}>
                   <span>{s.n}. {s.title}</span><span className="text-xs opacity-80">{mark}</span>
                 </button>
               </li>
+              </Fragment>
             );
           })}
           {staleParts.length > 0 && (
