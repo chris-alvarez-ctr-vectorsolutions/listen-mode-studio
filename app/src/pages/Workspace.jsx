@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, Fragment } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { deleteModuleAudio, getModule, listModules, loadSettings, moveModuleAudio, saveModule } from '../lib/store.js';
+import { deleteModule, deleteModuleAudio, getModule, listModules, loadSettings, moveModuleAudio, saveModule } from '../lib/store.js';
 import { addRuleToKit, fillStagePrompt, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
 import { composeSeed, fieldsFor, missingRequired, seedFieldsOf } from '../lib/seed.js';
@@ -550,7 +550,12 @@ Don't invent objectives. Reply with the JSON array only.`;
         {active === 'seed' && m.parentId && (
           <div className="space-y-6">
             <SetupCard title="Basics" hint="" setup={m.setup} onChange={setup => update({ setup, ...(parent ? { name: versionName(parent, setup) } : {}) })} />
-            <div className="flex justify-end border-t border-rule pt-4">
+            <div className="flex items-center justify-between gap-3 border-t border-rule pt-4">
+              <button className="btn" disabled={!!busy} onClick={async () => {
+                if (!confirm('Delete this variant and its audio? The module and its other variants are kept.')) return;
+                await deleteModule(m.id);
+                navigate(parent ? `/m/${parent.id}` : '/');
+              }}>Delete this variant</button>
               <button className="btn-primary" onClick={() => setActive('plan')}>Next: {no(stages[1])}. {stages[1].title} ›</button>
             </div>
           </div>
