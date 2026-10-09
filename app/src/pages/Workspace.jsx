@@ -460,7 +460,7 @@ Don't invent objectives. Reply with the JSON array only.`;
       <aside>
         {isVersion && parent && <p className="text-sm"><Link className="text-muted hover:text-ink" to={`/m/${parent.id}`}>← {parent.name}</Link></p>}
         {!isVersion && <h1 className="mt-1 text-xl font-semibold leading-snug">{m.name}</h1>}
-        {m.description?.trim() && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{m.description}</p>}
+        {!isVersion && m.description?.trim() && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{m.description}</p>}
         <ol className="mt-6 space-y-1">
           {!isVersion && (
             <>
@@ -498,7 +498,7 @@ Don't invent objectives. Reply with the JSON array only.`;
           )}
           {isVersion && (
             <>
-              <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>
+              <li className="pt-4"><button className={`w-full rounded-md px-3 py-2 text-left text-sm font-medium ${active === 'seed' ? 'bg-ink text-white' : 'border border-rule bg-panel hover:border-onair'}`} onClick={() => setActive('seed')}>
                 Basics
               </button></li>
             </>
