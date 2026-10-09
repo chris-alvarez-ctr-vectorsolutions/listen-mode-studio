@@ -458,8 +458,7 @@ Don't invent objectives. Reply with the JSON array only.`;
   return (
     <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
       <aside>
-        <Link to="/" className="text-sm text-muted hover:text-ink">All modules</Link>
-        {isVersion && parent && <p className="mt-2 text-sm"><Link className="text-muted hover:text-ink" to={`/m/${parent.id}`}>← {parent.name}</Link></p>}
+        {isVersion && parent && <p className="text-sm"><Link className="text-muted hover:text-ink" to={`/m/${parent.id}`}>← {parent.name}</Link></p>}
         <h1 className="mt-1 text-xl font-semibold leading-snug">{isVersion ? versionLabel(m.setup) : m.name}</h1>
         {m.description?.trim() && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{m.description}</p>}
         <ol className="mt-6 space-y-1">
@@ -496,9 +495,8 @@ Don't invent objectives. Reply with the JSON array only.`;
           )}
           {isVersion && (
             <>
-              <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'border border-rule bg-paper hover:border-onair'}`} onClick={() => setActive('seed')}>
-                <span className="block font-medium">Basics</span>
-                {(() => { const r = resolveSetup(m.setup); return [r.conversation?.name, r.industry?.name, r.role?.name].filter(Boolean).map(t => <span key={t} className={`block text-xs ${active === 'seed' ? 'opacity-80' : 'text-muted'}`}>{t}</span>); })()}
+              <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>
+                Basics
               </button></li>
               {parent && variantBehind(m, parent) && <li className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">⚠ The inputs changed in {parent.name}. Update this version.</li>}
             </>
