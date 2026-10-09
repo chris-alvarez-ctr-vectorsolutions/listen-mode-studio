@@ -16,7 +16,7 @@ DANA: Ray, you spent a long time in commercial kitchens before this, didn't you?
 RAY: Twenty-some years, mostly on the line, then training new cooks.
 DANA: Then you've seen every way a sandwich can go wrong.
 RAY: Most of them, yes.
-DANA: Good. Let's start.
+DANA: That's the kind of experience we'll lean on today.
 
 ## Close (a question or a callback, no thank-you)
 
