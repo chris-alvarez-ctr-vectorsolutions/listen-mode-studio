@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { getModule, loadSettings, saveModule } from '../lib/store.js';
+import { deleteModuleAudio, getModule, loadSettings, saveModule } from '../lib/store.js';
 import { addRuleToKit, fillStagePrompt, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
 import { composeSeed, fieldsFor, missingRequired, seedFieldsOf } from '../lib/seed.js';
 import { parsePerformance, scriptOnly, stripBannedTags } from '../lib/script.js';
 import { applySeams, parseSeams, seamBlock } from '../lib/seams.js';
+import { resyncVariant, variantBehind } from '../lib/variants.js';
 import SeamsResult from '../components/SeamsResult.jsx';
 import { inAudio, normalizeObjective, pathwayBlock, planParts } from '../lib/pathways.js';
 import { parseSeedTemplate, templatePrompt } from '../lib/seedTemplate.js';
@@ -97,9 +98,11 @@ export default function Workspace() {
   const [copied, setCopied] = useState(false);
   const abort = useRef(null);
   const mRef = useRef(null);
+  const [parent, setParent] = useState(null);   // a variant's base module: null while loading, false if it is gone
   const setBoth = next => { mRef.current = next; setM(next); };
   const cur = () => mRef.current;
 
+  useEffect(() => { if (!m?.parentId) { setParent(null); return; } getModule(m.parentId).then(p => setParent(p || false)); }, [m?.parentId]);
   useEffect(() => { getModule(id).then(mod => { nameSaved.current = mod?.name || ''; setBoth(mod); }); }, [id]);
   const stageParam = params.get('stage');
   useEffect(() => { window.scrollTo({ top: 0 }); }, [stageParam]);   // a new step opens at its top
@@ -442,7 +445,7 @@ Don't invent objectives. Reply with the JSON array only.`;
           <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>1. Seed</button></li>
           {stages.map((s, i) => {
             const status = st(s.id).status;
-            const mark = applying && s.id === 'editor' ? 'applying…' : stale[s.id] ? '⟳ outdated' : status === 'approved' ? (s.id === 'validity' && st('editor').applied?.count ? '✓ edited' : '✓') : status === 'skipped' ? 'skipped' : status === 'ready' ? 'review' : '';
+            const mark = m.parentId && s.id === 'ledger' ? 'from base' : applying && s.id === 'editor' ? 'applying…' : stale[s.id] ? '⟳ outdated' : status === 'approved' ? (s.id === 'validity' && st('editor').applied?.count ? '✓ edited' : '✓') : status === 'skipped' ? 'skipped' : status === 'ready' ? 'review' : '';
             return (
               <li key={s.id}>
                 <button disabled={!unlocked(i)} className={`flex w-full justify-between rounded-md px-3 py-2 text-left text-sm disabled:opacity-40 ${active === s.id ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive(s.id)}>
@@ -464,9 +467,58 @@ Don't invent objectives. Reply with the JSON array only.`;
       </aside>
 
       <section className="min-w-0 rounded-lg border border-rule bg-panel p-6">
+        {m.parentId && (
+          <div className={`mb-4 rounded-md border p-3 text-sm ${parent && variantBehind(m, parent) ? 'border-amber-300 bg-amber-50' : 'border-rule bg-paper'}`}>
+            {parent === false ? <p><strong>Variant.</strong> Its base module is gone. The inputs below are the copy it kept.</p> : (
+              <>
+                <p><strong>Variant of {parent ? <Link className="underline" to={`/m/${parent.id}`}>{parent.name}</Link> : '…'}.</strong> The seed, pathway table, claims ledger and its sign-off come from the base module. Industry, learner role and conversation type are this variant's own.</p>
+                {parent && variantBehind(m, parent) && (
+                  <p className="mt-2">The base module's inputs have changed since this variant was made.{' '}
+                    <button className="underline" disabled={!!busy} onClick={async () => {
+                      if (!confirm('Take the base module\'s current inputs? This clears this variant\'s plan, beats, script and audio, and keeps its name, note and setup.')) return;
+                      await deleteModuleAudio(m.id);
+                      await update(resyncVariant(cur(), parent));
+                      setActive('seed');
+                    }}>Update from the base module</button></p>
+                )}
+              </>
+            )}
+          </div>
+        )}
         {error && <p role="alert" className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
 
-        {active === 'seed' && (
+        {active === 'seed' && m.parentId && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold">Set up this variant</h2>
+              <p className="text-sm text-muted">Choose who this version is for and the show type. The content comes from the base module{m.ledgerSigned ? ', with its signed-off ledger' : ''}.</p>
+            </div>
+            <div>
+              <label className="label" htmlFor="module-name">Variant name</label>
+              <input id="module-name" className="field" value={m.name}
+                onChange={e => setBoth({ ...cur(), name: e.target.value })}
+                onBlur={commitName}
+                onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }} />
+              <label className="label mt-4" htmlFor="module-note">Note</label>
+              <textarea id="module-note" className="field" rows={2} placeholder="What this variant tries: the show type, the audience…"
+                value={m.description || ''}
+                onChange={e => setBoth({ ...cur(), description: e.target.value })}
+                onBlur={() => saveModule(cur())} />
+            </div>
+            <SetupCard setup={m.setup} onChange={setup => update({ setup })} />
+            <section className="rounded-md border border-rule bg-paper p-4 text-sm">
+              <h3 className="font-semibold">Inherited from the base module</h3>
+              <p className="mt-1 text-muted">{objectiveCount} objective{objectiveCount === 1 ? '' : 's'} in the pathway table · {m.stages.ledger?.status === 'skipped' ? 'ledger skipped' : 'claims ledger approved'} · {m.ledgerSigned ? 'signed off by the SME' : 'not signed off yet'}.
+                {parent && <> Change any of it in <Link className="underline" to={`/m/${parent.id}`}>the base module</Link>.</>}</p>
+              <details className="mt-2"><summary className="cursor-pointer">Show the seed text</summary><pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded bg-panel p-3 text-xs">{m.seed || '(none)'}</pre></details>
+            </section>
+            <div className="flex justify-end border-t border-rule pt-4">
+              <button className="btn-primary" onClick={() => setActive('plan')}>Next: {stages[1].n}. {stages[1].title} ›</button>
+            </div>
+          </div>
+        )}
+
+        {active === 'seed' && !m.parentId && (
           <div className="space-y-6">
             <div>
               <h2 className="text-lg font-semibold">Seed the module</h2>
@@ -589,7 +641,18 @@ Don't invent objectives. Reply with the JSON array only.`;
           </div>
         )}
 
-        {stage && (
+        {stage && m.parentId && stage.id === 'ledger' && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold">{stage.n}. {stage.title}</h2>
+              <p className="text-sm text-muted">This variant uses the base module's ledger{m.ledgerSigned ? ', which the SME has signed' : ', which is not signed off yet'}. To change a claim, change it in {parent ? <Link className="underline" to={`/m/${parent.id}?stage=ledger`}>the base module</Link> : 'the base module'}, then update this variant.</p>
+            </div>
+            {out ? <details className="rounded-md border border-rule bg-paper p-3 text-sm"><summary className="cursor-pointer">Show the ledger</summary><div className="mt-3"><Markdown text={out} /></div></details> : <p className="text-sm text-muted">The base module skipped the ledger.</p>}
+            <div className="flex justify-end border-t border-rule pt-4"><button className="btn-primary" onClick={() => setActive('plan')}>Next: {stages[1].n}. {stages[1].title} ›</button></div>
+          </div>
+        )}
+
+        {stage && !(m.parentId && stage.id === 'ledger') && (
           <div>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>

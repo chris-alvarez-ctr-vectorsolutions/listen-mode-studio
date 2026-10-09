@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { deleteModule, listModules, newModule, saveModule } from '../lib/store.js';
 import { download, readFileText } from '../lib/download.js';
-import { startingSetup } from '../lib/definitions.js';
+import { resolveSetup, startingSetup } from '../lib/definitions.js';
+import { canMakeVariant, makeVariant } from '../lib/variants.js';
 
 export default function Modules() {
   const [mods, setMods] = useState([]);
@@ -17,6 +18,12 @@ export default function Modules() {
     const m = await saveModule(newModule(name.trim(), startingSetup()));
     navigate(`/m/${m.id}`);
   }
+  async function newVariant(base) {
+    const name = prompt('Name this variant', `${base.name} · variant`);
+    if (!name?.trim()) return;
+    const v = await saveModule(makeVariant(base, name.trim()));
+    navigate(`/m/${v.id}`);
+  }
   async function importModule(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -26,6 +33,11 @@ export default function Modules() {
     refresh();
   }
 
+  // Variants sit under their base module. A variant whose base has been deleted is listed on its own.
+  const ids = new Set(mods.map(m => m.id));
+  const rows = mods.filter(m => !m.parentId || !ids.has(m.parentId)).flatMap(m => [{ m, child: false }, ...mods.filter(x => x.parentId === m.id).map(x => ({ m: x, child: true }))]);
+  const variantLabel = m => { const r = resolveSetup(m.setup); return [r.industry?.name, r.conversation?.name].filter(Boolean).join(' · '); };
+
   return (
     <div className="grid gap-10 md:grid-cols-[1fr_320px]">
       <section>
@@ -33,16 +45,18 @@ export default function Modules() {
         <p className="mt-1 text-muted">Each module goes from source content to rendered audio. Its work stays in this browser.</p>
         <ul className="mt-6 divide-y divide-rule rounded-lg border border-rule bg-panel">
           {mods.length === 0 && <li className="p-5 text-muted">No modules yet. Start one on the right.</li>}
-          {mods.map(m => (
-            <li key={m.id} className="flex items-center justify-between gap-4 p-4">
+          {rows.map(({ m, child }) => (
+            <li key={m.id} className={`flex items-center justify-between gap-4 p-4 ${child ? 'bg-paper pl-10' : ''}`}>
               <div>
                 <Link to={`/m/${m.id}`} className="font-medium hover:underline">{m.name}</Link>
+                {child && <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-xs text-muted ring-1 ring-rule">Variant · {variantLabel(m)}</span>}
                 {m.description?.trim() && <div className="mt-0.5 line-clamp-2 whitespace-pre-wrap text-sm text-muted">{m.description}</div>}
                 <div className="text-sm text-muted">Updated {new Date(m.updatedAt).toLocaleString()}</div>
               </div>
               <div className="flex gap-2">
+                {canMakeVariant(m) && <button className="btn" onClick={() => newVariant(m)}>New variant</button>}
                 <button className="btn" onClick={() => download(`${m.name}.module.json`, JSON.stringify(m, null, 2))}>Export</button>
-                <button className="btn" onClick={async () => { if (confirm(`Delete "${m.name}" and its audio?`)) { await deleteModule(m.id); refresh(); } }}>Delete</button>
+                <button className="btn" onClick={async () => { if (confirm(`Delete "${m.name}" and its audio?${mods.some(x => x.parentId === m.id) ? ' Its variants are kept, but they will no longer be linked to it.' : ''}`)) { await deleteModule(m.id); refresh(); } }}>Delete</button>
               </div>
             </li>
           ))}

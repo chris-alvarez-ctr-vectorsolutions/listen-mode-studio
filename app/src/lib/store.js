@@ -49,6 +49,10 @@ export async function deleteModule(id) {
   const ks = (await keys()).filter(k => String(k).startsWith(`mas.audio:${id}:`));
   await Promise.all(ks.map(k => del(k)));
 }
+export async function deleteModuleAudio(id) {
+  const ks = (await keys()).filter(k => String(k).startsWith(`mas.audio:${id}:`));
+  await Promise.all(ks.map(k => del(k)));
+}
 export const getAudio = (mid, pid) => get(AUDIO(mid, pid));
 export const saveAudio = (mid, pid, blob) => set(AUDIO(mid, pid), blob);
 export const deleteAudio = (mid, pid) => del(AUDIO(mid, pid));
@@ -66,6 +70,7 @@ export function newModule(name, setup) {
     stages: {},           // stageId -> { status, output, history: [] }
     currentScript: '',
     objectives: [],       // pathway table: [{ id, objective, type, subscale, policy, lock, audio }]
+    parentId: null,       // a variant points at the base module it borrows its inputs from (see variants.js)
     parts: null,          // performance-pass JSON: { parts, assembly }
     notes: [],            // line comments waiting to be sent
     createdAt: Date.now(),
