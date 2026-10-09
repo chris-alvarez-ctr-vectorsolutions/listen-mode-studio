@@ -37,3 +37,4 @@
 - [ ] Dana has turns other than questions (a reaction, a scenario she sets up, what she'd do differently). A wrong assumption she voices is corrected in full in the next turn and is backed by the ledger.
 - [ ] No fact, list or statistic inside a character's story. The facts follow the story.
 - [ ] No "before the show" or "off mic" setup, no host thanking another for explaining, no canned personality line.
+- [ ] Every expert turn answers a question or invitation the host aimed at him in the turn before. No question is left in the air for him to pick up.

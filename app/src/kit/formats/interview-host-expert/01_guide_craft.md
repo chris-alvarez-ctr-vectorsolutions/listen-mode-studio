@@ -15,7 +15,7 @@
 - Each part uses one way in and one way out from the lists below. None repeats within a listen. These describe moves; write fresh wording every time.
 
 **Ways in**
-- Dana asks the question a listener would ask.
+- Dana asks the question a listener would ask, aimed at the expert ("you"), not at the room.
 - Ray describes something he saw on the job, with its outcome.
 - Dana admits she's made the same mistake herself.
 - A surprising fact, from the claims ledger only.
