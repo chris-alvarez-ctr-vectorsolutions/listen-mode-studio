@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, Fragment } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { deleteModuleAudio, getModule, loadSettings, saveModule } from '../lib/store.js';
+import { deleteModuleAudio, getModule, listModules, loadSettings, saveModule } from '../lib/store.js';
 import { addRuleToKit, fillStagePrompt, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
 import { composeSeed, fieldsFor, missingRequired, seedFieldsOf } from '../lib/seed.js';
@@ -98,11 +98,14 @@ export default function Workspace() {
   const [copied, setCopied] = useState(false);
   const abort = useRef(null);
   const mRef = useRef(null);
+  const [family, setFamily] = useState([]);       // the base module and its variants, for the sidebar list
+  const [naming, setNaming] = useState(null);      // the name being typed for a new variant, or null
   const [parent, setParent] = useState(null);   // a variant's base module: null while loading, false if it is gone
   const setBoth = next => { mRef.current = next; setM(next); };
   const cur = () => mRef.current;
 
   useEffect(() => { if (!m?.parentId) { setParent(null); return; } getModule(m.parentId).then(p => setParent(p || false)); }, [m?.parentId]);
+  useEffect(() => { const base = m?.parentId || m?.id; if (!base) return; listModules().then(all => setFamily(all.filter(x => x.id === base || x.parentId === base))); }, [m?.id, m?.parentId, m?.updatedAt]);
   useEffect(() => { getModule(id).then(mod => { nameSaved.current = mod?.name || ''; setBoth(mod); }); }, [id]);
   const stageParam = params.get('stage');
   useEffect(() => { window.scrollTo({ top: 0 }); }, [stageParam]);   // a new step opens at its top
@@ -441,6 +444,18 @@ Don't invent objectives. Reply with the JSON array only.`;
         <Link to="/" className="text-sm text-muted hover:text-ink">All modules</Link>
         <h1 className="mt-2 text-xl font-semibold leading-snug">{m.name}</h1>
         {m.description?.trim() && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{m.description}</p>}
+        {family.length > 1 && (
+          <nav aria-label="Versions of this module" className="mt-3 rounded-md border border-rule bg-paper p-2 text-sm">
+            <div className="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Versions</div>
+            <ul className="space-y-0.5">
+              {[...family].sort((a, b) => (a.parentId ? 1 : 0) - (b.parentId ? 1 : 0) || (a.createdAt || 0) - (b.createdAt || 0)).map(x => (
+                <li key={x.id}>{x.id === m.id
+                  ? <span className="block rounded px-1 py-0.5 font-medium">{x.parentId ? '↳ ' : ''}{x.name}</span>
+                  : <Link className="block rounded px-1 py-0.5 text-muted hover:text-ink hover:underline" to={`/m/${x.id}`}>{x.parentId ? '↳ ' : ''}{x.name}</Link>}</li>
+              ))}
+            </ul>
+          </nav>
+        )}
         <ol className="mt-6 space-y-1">
           <li className="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">{m.parentId ? 'Inputs (from the base module)' : 'Inputs'}</li>
           <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>1. Seed</button></li>
@@ -452,15 +467,24 @@ Don't invent objectives. Reply with the JSON array only.`;
               {s.id === 'plan' && (
                 <li className="mt-3 px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">
                   Listening experience
-                  {!m.parentId && canMakeVariant(m) && (
-                    <button className="mt-1 block w-full rounded-md border border-rule bg-panel px-2 py-1.5 text-left text-xs font-normal normal-case tracking-normal text-ink hover:border-onair" onClick={async () => {
-                      const name = prompt('Name this variant', `${m.name} · variant`);
-                      if (!name?.trim()) return;
+                  {!m.parentId && canMakeVariant(m) && (naming === null ? (
+                    <button className="mt-1 block w-full rounded-md border border-rule bg-panel px-2 py-1.5 text-left text-xs font-normal normal-case tracking-normal text-ink hover:border-onair" onClick={() => setNaming(`${m.name} · variant`)}>
+                      Make another version of this module ›<span className="mt-0.5 block text-muted">Same claims, different show type or audience. This module stays as it is.</span>
+                    </button>
+                  ) : (
+                    <form className="mt-1 space-y-1.5 font-normal normal-case tracking-normal" onSubmit={async e => {
+                      e.preventDefault();
+                      if (!naming.trim()) return;
                       await saveModule(cur());
-                      const v = await saveModule(makeVariant(cur(), name.trim()));
+                      const v = await saveModule(makeVariant(cur(), naming.trim()));
+                      setNaming(null);
                       navigate(`/m/${v.id}`);
-                    }}>Make another version of this module ›<span className="mt-0.5 block text-muted">Same claims, different show type or audience. This module stays as it is.</span></button>
-                  )}
+                    }}>
+                      <label className="block text-xs text-ink" htmlFor="variant-name">Name the new version</label>
+                      <input id="variant-name" autoFocus className="field !py-1 text-sm" value={naming} onChange={e => setNaming(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') setNaming(null); }} />
+                      <div className="flex gap-2"><button className="btn-primary !px-2.5 !py-1 text-xs" type="submit">Create</button><button className="btn !px-2.5 !py-1 text-xs" type="button" onClick={() => setNaming(null)}>Cancel</button></div>
+                    </form>
+                  ))}
                 </li>
               )}
               <li>

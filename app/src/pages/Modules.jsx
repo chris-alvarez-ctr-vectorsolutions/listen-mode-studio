@@ -18,10 +18,11 @@ export default function Modules() {
     const m = await saveModule(newModule(name.trim(), startingSetup()));
     navigate(`/m/${m.id}`);
   }
-  async function newVariant(base) {
-    const name = prompt('Name this variant', `${base.name} · variant`);
+  const [naming, setNaming] = useState(null);   // { id, name } while a variant is being named
+  async function newVariant(base, name) {
     if (!name?.trim()) return;
     const v = await saveModule(makeVariant(base, name.trim()));
+    setNaming(null);
     navigate(`/m/${v.id}`);
   }
   async function importModule(e) {
@@ -54,7 +55,12 @@ export default function Modules() {
                 <div className="text-sm text-muted">Updated {new Date(m.updatedAt).toLocaleString()}</div>
               </div>
               <div className="flex gap-2">
-                {canMakeVariant(m) && <button className="btn" onClick={() => newVariant(m)}>New variant</button>}
+                {canMakeVariant(m) && (naming?.id === m.id
+                  ? <form className="flex gap-2" onSubmit={e => { e.preventDefault(); newVariant(m, naming.name); }}>
+                      <input aria-label="Variant name" autoFocus className="field !py-1 text-sm" value={naming.name} onChange={e => setNaming({ id: m.id, name: e.target.value })} onKeyDown={e => { if (e.key === 'Escape') setNaming(null); }} />
+                      <button className="btn-primary" type="submit">Create</button><button className="btn" type="button" onClick={() => setNaming(null)}>Cancel</button>
+                    </form>
+                  : <button className="btn" onClick={() => setNaming({ id: m.id, name: `${m.name} · variant` })}>New variant</button>)}
                 <button className="btn" onClick={() => download(`${m.name}.module.json`, JSON.stringify(m, null, 2))}>Export</button>
                 <button className="btn" onClick={async () => { if (confirm(`Delete "${m.name}" and its audio?${mods.some(x => x.parentId === m.id) ? ' Its variants are kept, but they will no longer be linked to it.' : ''}`)) { await deleteModule(m.id); refresh(); } }}>Delete</button>
               </div>
