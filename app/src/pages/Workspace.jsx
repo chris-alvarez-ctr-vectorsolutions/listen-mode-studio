@@ -99,7 +99,7 @@ export default function Workspace() {
   const abort = useRef(null);
   const mRef = useRef(null);
   const [family, setFamily] = useState([]);       // the base module and its variants, for the sidebar list
-  const [naming, setNaming] = useState(null);      // the name being typed for a new variant, or null
+  const [nv, setNv] = useState(null);              // a new version being set up: { name, setup }
   const [parent, setParent] = useState(null);   // a variant's base module: null while loading, false if it is gone
   const setBoth = next => { mRef.current = next; setM(next); };
   const cur = () => mRef.current;
@@ -134,6 +134,13 @@ export default function Workspace() {
   const objectiveCount = (m.objectives || []).length;
   const missingNow = missingRequired(seedFieldsOf(m)).filter(() => !m.sources.length);
   const stages = kit.stages;
+  // The module holds the inputs. A version (a child module) holds one listening experience. A module made before
+  // versions existed keeps its own listening experience, so nothing it already did disappears.
+  const isVersion = !!m.parentId;
+  const ownRun = !isVersion && (Object.keys(m.stages || {}).some(k => k !== 'ledger' && m.stages[k]?.output) || !!m.parts);
+  const showExperience = isVersion || ownRun;
+  const no = s => (isVersion ? s.n - 2 : s.n);      // a version numbers its own steps from 1
+  const progressOf = x => { const last = [...stages].reverse().find(t => t.id !== 'ledger' && x.stages?.[t.id]?.output); return x.parts?.assembly?.length ? 'Script ready' : last ? `${last.title} done` : 'Not started'; };
   const update = async patch => { const next = { ...cur(), ...patch }; setBoth(next); await saveModule(next); return next; };
   const st = sid => cur().stages[sid] || { status: 'idle' };
   const unlocked = idx => idx === 0 || ['approved', 'skipped'].includes(st(stages[idx - 1].id).status);
@@ -233,7 +240,7 @@ export default function Workspace() {
     if (st(stage.id).status !== 'approved') { const done = approve(stage); if (!done) return; await done; }
     runNext(stage);
   };
-  const nextLabel = stage => { const nx = nextOf(stage); return nx ? `Next: ${nx.n}. ${nx.title} ›` : ''; };
+  const nextLabel = stage => { const nx = nextOf(stage); return nx ? `Next: ${no(nx)}. ${nx.title} ›` : ''; };
   const skip = stage => update({ stages: { ...cur().stages, [stage.id]: { status: 'skipped', output: '' } } });
 
   function revise(stage) {
@@ -411,7 +418,9 @@ Don't invent objectives. Reply with the JSON array only.`;
   // A stage that isn't open yet (or doesn't exist) in the address falls back to the seed.
   const requested = params.get('stage') || 'seed';
   const reqIdx = stages.findIndex(s => s.id === requested);
-  const active = requested === 'seed' || (reqIdx >= 0 && unlocked(reqIdx)) ? requested : 'seed';
+  const allowed = requested === 'seed' || (requested === 'newversion' && !isVersion)
+    || (reqIdx >= 0 && unlocked(reqIdx) && !(isVersion && requested === 'ledger') && !(!showExperience && reqIdx > 0));
+  const active = allowed ? requested : 'seed';
   const stage = stages.find(s => s.id === active);
   const out = stage ? st(stage.id).output : '';
   const editorItems = stage?.kind === 'editor' && out ? splitFixItems(out)?.items || [] : [];
@@ -442,70 +451,71 @@ Don't invent objectives. Reply with the JSON array only.`;
     <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
       <aside>
         <Link to="/" className="text-sm text-muted hover:text-ink">All modules</Link>
-        <h1 className="mt-2 text-xl font-semibold leading-snug">{m.name}</h1>
+        {isVersion && <p className="mt-2 text-xs uppercase tracking-wide text-muted">Version of {parent ? <Link className="underline" to={`/m/${parent.id}`}>{parent.name}</Link> : 'a module'}</p>}
+        <h1 className="mt-1 text-xl font-semibold leading-snug">{m.name}</h1>
         {m.description?.trim() && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{m.description}</p>}
         <ol className="mt-6 space-y-1">
-          <li className="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">{m.parentId ? 'Inputs · shared with every version' : family.length > 1 ? 'Inputs · shared by every version' : 'Inputs'}</li>
-          <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>1. Seed</button></li>
-          {stages.map((s, i) => {
-            const status = st(s.id).status;
-            const mark = m.parentId && s.id === 'ledger' ? 'from base' : applying && s.id === 'editor' ? 'applying…' : stale[s.id] ? '⟳ outdated' : status === 'approved' ? (s.id === 'validity' && st('editor').applied?.count ? '✓ edited' : '✓') : status === 'skipped' ? 'skipped' : status === 'ready' ? 'review' : '';
-            return (
-              <Fragment key={s.id}>
-              {s.id === 'plan' && (
-                <>
-                  {(family.length > 1 || (!m.parentId && canMakeVariant(m))) && (
-                    <li className="mt-4 rounded-md border border-rule bg-paper p-2">
-                      <div className="px-1 text-xs font-semibold uppercase tracking-wide text-muted">Versions</div>
-                      <p className="px-1 pb-1 text-xs text-muted">Each version starts from the same inputs above and takes its own listening experience: its own show type, industry and audience.</p>
-                      {family.length > 1 && (
-                        <ul className="space-y-0.5 text-sm">
-                          {[...family].sort((a, b) => (a.parentId ? 1 : 0) - (b.parentId ? 1 : 0) || (a.createdAt || 0) - (b.createdAt || 0)).map(x => (
-                            <li key={x.id}>{x.id === m.id
-                              ? <span className="block rounded bg-white px-1.5 py-1 font-medium ring-1 ring-rule">{x.parentId ? '↳ ' : ''}{x.name}<span className="ml-1 text-xs font-normal text-muted">(this one)</span></span>
-                              : <Link className="block rounded px-1.5 py-1 text-muted hover:text-ink hover:underline" to={`/m/${x.id}`}>{x.parentId ? '↳ ' : ''}{x.name}</Link>}</li>
-                          ))}
-                        </ul>
-                      )}
-                      <div className="mt-1 text-xs">
-                        {!m.parentId && canMakeVariant(m) && (naming === null ? (
-                                            <button className="mt-1 block w-full rounded-md border border-rule bg-panel px-2 py-1.5 text-left text-xs font-normal normal-case tracking-normal text-ink hover:border-onair" onClick={() => setNaming(`${m.name} · variant`)}>
-                                              Make another version of this module ›<span className="mt-0.5 block text-muted">Same claims, different show type or audience. This module stays as it is.</span>
-                                            </button>
-                                          ) : (
-                                            <form className="mt-1 space-y-1.5 font-normal normal-case tracking-normal" onSubmit={async e => {
-                                              e.preventDefault();
-                                              if (!naming.trim()) return;
-                                              await saveModule(cur());
-                                              const v = await saveModule(makeVariant(cur(), naming.trim()));
-                                              setNaming(null);
-                                              navigate(`/m/${v.id}`);
-                                            }}>
-                                              <label className="block text-xs text-ink" htmlFor="variant-name">Name the new version</label>
-                                              <input id="variant-name" autoFocus className="field !py-1 text-sm" value={naming} onChange={e => setNaming(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') setNaming(null); }} />
-                                              <div className="flex gap-2"><button className="btn-primary !px-2.5 !py-1 text-xs" type="submit">Create</button><button className="btn !px-2.5 !py-1 text-xs" type="button" onClick={() => setNaming(null)}>Cancel</button></div>
-                                            </form>
-                                          ))}
-                      </div>
-                    </li>
-                  )}
-                  <li className="mt-3 px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Listening experience{family.length > 1 ? ' · this version' : ''}</li>
-                </>
-              )}
+          {!isVersion && (
+            <>
+              <li className="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Inputs</li>
+              <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>1. Seed</button></li>
+              {stages.slice(0, 1).map((s, i) => {
+            const mark = applying && s.id === 'editor' ? 'applying…' : stale[s.id] ? '⟳ outdated' : status === 'approved' ? (s.id === 'validity' && st('editor').applied?.count ? '✓ edited' : '✓') : status === 'skipped' ? 'skipped' : status === 'ready' ? 'review' : '';
+                return (
+                  <li key={s.id}>
+                    <button disabled={!unlocked(i)} className={`flex w-full justify-between rounded-md px-3 py-2 text-left text-sm disabled:opacity-40 ${active === s.id ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive(s.id)}>
+                      <span>{no(s)}. {s.title}</span><span className="text-xs opacity-80">{mark}</span>
+                    </button>
+                  </li>
+                );
+              })}
+              <li className="mt-4 px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Versions</li>
+              <li className="px-1 pb-1 text-xs text-muted">Each version takes these inputs and gives them one listening experience: a show type, an industry and an audience.</li>
+              {family.filter(x => x.id !== m.id).map(x => (
+                <li key={x.id}>
+                  <Link className="block rounded-md border border-rule bg-paper px-3 py-2 text-sm hover:border-onair" to={`/m/${x.id}`}>
+                    <span className="block font-medium">{x.name}</span>
+                    <span className="block text-xs text-muted">{progressOf(x)}{variantBehind(x, m) ? ' · ⚠ inputs changed, needs updating' : ''}</span>
+                  </Link>
+                </li>
+              ))}
               <li>
-                <button disabled={!unlocked(i)} className={`flex w-full justify-between rounded-md px-3 py-2 text-left text-sm disabled:opacity-40 ${active === s.id ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive(s.id)}>
-                  <span>{s.n}. {s.title}</span><span className="text-xs opacity-80">{mark}</span>
+                <button className={`w-full rounded-md border border-dashed px-3 py-2 text-left text-sm ${active === 'newversion' ? 'border-ink bg-ink text-white' : 'border-rule hover:border-onair'}`} onClick={() => { setNv(null); setActive('newversion'); }}>＋ New version
+                  <span className={`block text-xs ${active === 'newversion' ? 'opacity-80' : 'text-muted'}`}>{canMakeVariant(m) ? 'Start by choosing a show type and audience' : 'Approve the claims ledger first'}</span>
                 </button>
               </li>
-              </Fragment>
-            );
-          })}
+            </>
+          )}
+          {isVersion && (
+            <>
+              <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>Show setup
+                <span className={`block text-xs ${active === 'seed' ? 'opacity-80' : 'text-muted'}`}>{(() => { const r = resolveSetup(m.setup); return [r.conversation?.name, r.industry?.name].filter(Boolean).join(' · '); })()}</span></button></li>
+              {parent && variantBehind(m, parent) && <li className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">⚠ The inputs changed in {parent.name}. Open Show setup to update.</li>}
+            </>
+          )}
+          {showExperience && (
+            <>
+              <li className="mt-4 px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Listening experience</li>
+              {stages.map((s, i) => {
+                if (s.id === 'ledger' && isVersion) return null;
+                if (!isVersion && i === 0) return null;
+                const mark = applying && s.id === 'editor' ? 'applying…' : stale[s.id] ? '⟳ outdated' : status === 'approved' ? (s.id === 'validity' && st('editor').applied?.count ? '✓ edited' : '✓') : status === 'skipped' ? 'skipped' : status === 'ready' ? 'review' : '';
+                return (
+                  <li key={s.id}>
+                    <button disabled={!unlocked(i)} className={`flex w-full justify-between rounded-md px-3 py-2 text-left text-sm disabled:opacity-40 ${active === s.id ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive(s.id)}>
+                      <span>{no(s)}. {s.title}</span><span className="text-xs opacity-80">{mark}</span>
+                    </button>
+                  </li>
+                );
+              })}
           {staleParts.length > 0 && (
             <li><Link to={`/m/${m.id}/impact`} className="mt-3 block rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
               ⚠ {staleParts.length} recorded part{staleParts.length > 1 ? 's' : ''} out of date after a claim changed
             </Link></li>
           )}
-          <li><Link to={`/m/${m.id}/render`} className={`mt-1 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>10. Render audio{audioOutdated > 0 && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900">⟳ outdated</span>}</Link></li>
+          <li><Link to={`/m/${m.id}/render`} className={`mt-1 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>{isVersion ? 8 : 10}. Render audio{audioOutdated > 0 && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900">⟳ outdated</span>}</Link></li>
+            </>
+          )}
           {(m.runLog || []).length > 0 && (
             <li><Link to={`/m/${m.id}/runs`} className="mt-3 block px-1 text-xs text-muted underline hover:text-ink">Run log · {formatDuration(m.runLog.reduce((n, r) => n + (r.ms || 0), 0))} over {m.runLog.length} run{m.runLog.length > 1 ? 's' : ''}</Link></li>
           )}
@@ -513,22 +523,16 @@ Don't invent objectives. Reply with the JSON array only.`;
       </aside>
 
       <section className="min-w-0 rounded-lg border border-rule bg-panel p-6">
-        {m.parentId && (
-          <div className={`mb-4 rounded-md border p-3 text-sm ${parent && variantBehind(m, parent) ? 'border-amber-300 bg-amber-50' : 'border-rule bg-paper'}`}>
-            {parent === false ? <p><strong>Variant.</strong> Its base module is gone. The inputs below are the copy it kept.</p> : (
-              <>
-                <p><strong>Variant of {parent ? <Link className="underline" to={`/m/${parent.id}`}>{parent.name}</Link> : '…'}.</strong> The seed, pathway table, claims ledger and its sign-off come from the base module. Industry, learner role and conversation type are this variant's own.</p>
-                {parent && variantBehind(m, parent) && (
-                  <p className="mt-2">The base module's inputs have changed since this variant was made.{' '}
-                    <button className="underline" disabled={!!busy} onClick={async () => {
-                      if (!confirm('Take the base module\'s current inputs? This clears this variant\'s plan, beats, script and audio, and keeps its name, note and setup.')) return;
-                      await deleteModuleAudio(m.id);
-                      await update(resyncVariant(cur(), parent));
-                      setActive('seed');
-                    }}>Update from the base module</button></p>
-                )}
-              </>
-            )}
+        {isVersion && parent === false && <p className="mb-4 rounded-md border border-rule bg-paper p-3 text-sm">The module this version came from is gone. The inputs here are the copy it kept.</p>}
+        {isVersion && parent && variantBehind(m, parent) && (
+          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
+            <p><strong>The inputs changed.</strong> <Link className="underline" to={`/m/${parent.id}`}>{parent.name}</Link> has a different seed, pathway table or claims ledger than this version was built from.</p>
+            <p className="mt-2"><button className="btn" disabled={!!busy} onClick={async () => {
+              if (!confirm('Take the current inputs? This clears this version\'s plan, beats, script and audio, and keeps its name, note and show setup.')) return;
+              await deleteModuleAudio(m.id);
+              await update(resyncVariant(cur(), parent));
+              setActive('seed');
+            }}>Update this version to the new inputs</button></p>
           </div>
         )}
         {error && <p role="alert" className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
@@ -536,33 +540,61 @@ Don't invent objectives. Reply with the JSON array only.`;
         {active === 'seed' && m.parentId && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold">Set up this variant</h2>
-              <p className="text-sm text-muted">Choose who this version is for and the show type. The content comes from the base module{m.ledgerSigned ? ', with its signed-off ledger' : ''}.</p>
+              <h2 className="text-lg font-semibold">Show setup</h2>
+              <p className="text-sm text-muted">Choose the show type and who it is for. The content comes from the inputs in {parent ? <Link className="underline" to={`/m/${parent.id}`}>{parent.name}</Link> : 'the module'}{m.ledgerSigned ? ', with its signed-off claims ledger' : ''}.</p>
             </div>
             <div>
-              <label className="label" htmlFor="module-name">Variant name</label>
+              <label className="label" htmlFor="module-name">Version name</label>
               <input id="module-name" className="field" value={m.name}
                 onChange={e => setBoth({ ...cur(), name: e.target.value })}
                 onBlur={commitName}
                 onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }} />
               <label className="label mt-4" htmlFor="module-note">Note</label>
-              <textarea id="module-note" className="field" rows={2} placeholder="What this variant tries: the show type, the audience…"
+              <textarea id="module-note" className="field" rows={2} placeholder="What this version tries: the show type, the audience…"
                 value={m.description || ''}
                 onChange={e => setBoth({ ...cur(), description: e.target.value })}
                 onBlur={() => saveModule(cur())} />
             </div>
             <SetupCard setup={m.setup} onChange={setup => update({ setup })} />
             <section className="rounded-md border border-rule bg-paper p-4 text-sm">
-              <h3 className="font-semibold">Inherited from the base module</h3>
+              <h3 className="font-semibold">Inputs this version uses</h3>
               <p className="mt-1 text-muted">{objectiveCount} objective{objectiveCount === 1 ? '' : 's'} in the pathway table · {m.stages.ledger?.status === 'skipped' ? 'ledger skipped' : 'claims ledger approved'} · {m.ledgerSigned ? 'signed off by the SME' : 'not signed off yet'}.
-                {parent && <> Change any of it in <Link className="underline" to={`/m/${parent.id}`}>the base module</Link>.</>}</p>
+                {parent && <> To change any of it, go to <Link className="underline" to={`/m/${parent.id}`}>{parent.name}</Link>; every version will then ask to update.</>}</p>
+              {m.stages.ledger?.output && <details className="mt-2"><summary className="cursor-pointer">Show the claims ledger</summary><div className="mt-2"><Markdown text={m.stages.ledger.output} /></div></details>}
               <details className="mt-2"><summary className="cursor-pointer">Show the seed text</summary><pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded bg-panel p-3 text-xs">{m.seed || '(none)'}</pre></details>
             </section>
             <div className="flex justify-end border-t border-rule pt-4">
-              <button className="btn-primary" onClick={() => setActive('plan')}>Next: {stages[1].n}. {stages[1].title} ›</button>
+              <button className="btn-primary" onClick={() => setActive('plan')}>Next: {no(stages[1])}. {stages[1].title} ›</button>
             </div>
           </div>
         )}
+
+        {active === 'newversion' && !isVersion && (() => {
+          const v = nv || { name: `${m.name} · `, setup: m.setup };
+          const ready = canMakeVariant(m);
+          return (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold">New version</h2>
+                <p className="text-sm text-muted">A version takes this module's inputs (the seed, the pathway table and the claims ledger) and gives them one listening experience. Start by choosing the show type and who it is for.</p>
+              </div>
+              {!ready && <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Approve or skip the claims ledger first, so a version has solid inputs to build on.</p>}
+              <div>
+                <label className="label" htmlFor="nv-name">Version name</label>
+                <input id="nv-name" className="field" value={v.name} onChange={e => setNv({ ...v, name: e.target.value })} />
+              </div>
+              <SetupCard setup={v.setup} onChange={setup => setNv({ ...v, setup })} />
+              <div className="flex justify-end border-t border-rule pt-4">
+                <button className="btn-primary" disabled={!ready || !v.name.trim()} onClick={async () => {
+                  await saveModule(cur());
+                  const created = await saveModule(makeVariant(cur(), v.name.trim(), v.setup));
+                  setNv(null);
+                  navigate(`/m/${created.id}?stage=plan`);
+                }}>Create the version and start its plan ›</button>
+              </div>
+            </div>
+          );
+        })()}
 
         {active === 'seed' && !m.parentId && (
           <div className="space-y-6">
@@ -584,7 +616,7 @@ Don't invent objectives. Reply with the JSON array only.`;
                 onBlur={() => saveModule(cur())} />
               <p className="mt-1 text-xs text-muted">For you and anyone you hand the module to. It is saved with the module and its export, and is never sent to the AI.</p>
             </div>
-            <SetupCard setup={m.setup} onChange={setup => update({ setup })} />
+            {ownRun && <SetupCard setup={m.setup} onChange={setup => update({ setup })} />}
             <section className="space-y-4 rounded-md border border-rule bg-paper p-4">
               <div>
                 <h3 className="font-semibold">Step 1 · Fill in the details from your own AI chat</h3>
@@ -687,22 +719,11 @@ Don't invent objectives. Reply with the JSON array only.`;
           </div>
         )}
 
-        {stage && m.parentId && stage.id === 'ledger' && (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold">{stage.n}. {stage.title}</h2>
-              <p className="text-sm text-muted">This variant uses the base module's ledger{m.ledgerSigned ? ', which the SME has signed' : ', which is not signed off yet'}. To change a claim, change it in {parent ? <Link className="underline" to={`/m/${parent.id}?stage=ledger`}>the base module</Link> : 'the base module'}, then update this variant.</p>
-            </div>
-            {out ? <details className="rounded-md border border-rule bg-paper p-3 text-sm"><summary className="cursor-pointer">Show the ledger</summary><div className="mt-3"><Markdown text={out} /></div></details> : <p className="text-sm text-muted">The base module skipped the ledger.</p>}
-            <div className="flex justify-end border-t border-rule pt-4"><button className="btn-primary" onClick={() => setActive('plan')}>Next: {stages[1].n}. {stages[1].title} ›</button></div>
-          </div>
-        )}
-
-        {stage && !(m.parentId && stage.id === 'ledger') && (
+        {stage && (
           <div>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold">{stage.n}. {stage.title}</h2>
+                <h2 className="text-lg font-semibold">{no(stage)}. {stage.title}</h2>
                 <p className="text-sm text-muted">{stage.gate}</p>
                 {(() => { const r = [...(m.runLog || [])].reverse().find(x => x.stage === stage.id && x.ok); return r ? <p className="mt-0.5 text-xs text-muted">Last run {formatDuration(r.ms)}{r.words ? ` · ${r.words.toLocaleString()} words back` : ''}{r.sent ? ` · sent about ${r.sent.toLocaleString()} tokens` : ''}</p> : null; })()}
                 {['validity', 'editor', 'performance'].includes(stage.id) && <p className="mt-0.5 text-xs text-muted">Script now: {st('editor').applied?.count ? `after the editor's fixes (${st('editor').applied.count} applied)` : st('validity').output ? 'as the validity pass left it' : 'the first draft'}</p>}
@@ -826,7 +847,7 @@ Don't invent objectives. Reply with the JSON array only.`;
             {busy !== stage.id && out && stage.kind === 'json' && m.parts && (
               <div className="mt-4 flex justify-end border-t border-rule pt-4">
                 <button className="btn-primary" disabled={!!busy} onClick={async () => { if (st(stage.id).status !== 'approved') await approve(stage); setActive('seams'); }}>
-                  {st(stage.id).status === 'approved' ? '' : 'Approve · '}Next: 9. Seams ›
+                  {st(stage.id).status === 'approved' ? '' : 'Approve · '}Next: {no(stages.find(t => t.id === 'seams'))}. Seams ›
                 </button>
               </div>
             )}

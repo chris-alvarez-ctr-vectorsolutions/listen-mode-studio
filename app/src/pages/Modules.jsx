@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { deleteModule, listModules, newModule, saveModule } from '../lib/store.js';
 import { download, readFileText } from '../lib/download.js';
 import { resolveSetup, startingSetup } from '../lib/definitions.js';
-import { canMakeVariant, makeVariant } from '../lib/variants.js';
+import { canMakeVariant } from '../lib/variants.js';
 
 export default function Modules() {
   const [mods, setMods] = useState([]);
@@ -17,13 +17,6 @@ export default function Modules() {
     if (!name.trim()) return;
     const m = await saveModule(newModule(name.trim(), startingSetup()));
     navigate(`/m/${m.id}`);
-  }
-  const [naming, setNaming] = useState(null);   // { id, name } while a variant is being named
-  async function newVariant(base, name) {
-    if (!name?.trim()) return;
-    const v = await saveModule(makeVariant(base, name.trim()));
-    setNaming(null);
-    navigate(`/m/${v.id}`);
   }
   async function importModule(e) {
     const file = e.target.files?.[0];
@@ -50,17 +43,12 @@ export default function Modules() {
             <li key={m.id} className={`flex items-center justify-between gap-4 p-4 ${child ? 'bg-paper pl-10' : ''}`}>
               <div>
                 <Link to={`/m/${m.id}`} className="font-medium hover:underline">{m.name}</Link>
-                {child && <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-xs text-muted ring-1 ring-rule">Variant · {variantLabel(m)}</span>}
+                {child && <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-xs text-muted ring-1 ring-rule">Version · {variantLabel(m)}</span>}
                 {m.description?.trim() && <div className="mt-0.5 line-clamp-2 whitespace-pre-wrap text-sm text-muted">{m.description}</div>}
                 <div className="text-sm text-muted">Updated {new Date(m.updatedAt).toLocaleString()}</div>
               </div>
               <div className="flex gap-2">
-                {canMakeVariant(m) && (naming?.id === m.id
-                  ? <form className="flex gap-2" onSubmit={e => { e.preventDefault(); newVariant(m, naming.name); }}>
-                      <input aria-label="Variant name" autoFocus className="field !py-1 text-sm" value={naming.name} onChange={e => setNaming({ id: m.id, name: e.target.value })} onKeyDown={e => { if (e.key === 'Escape') setNaming(null); }} />
-                      <button className="btn-primary" type="submit">Create</button><button className="btn" type="button" onClick={() => setNaming(null)}>Cancel</button>
-                    </form>
-                  : <button className="btn" onClick={() => setNaming({ id: m.id, name: `${m.name} · variant` })}>New variant</button>)}
+                {!child && canMakeVariant(m) && <Link className="btn" to={`/m/${m.id}?stage=newversion`}>New version</Link>}
                 <button className="btn" onClick={() => download(`${m.name}.module.json`, JSON.stringify(m, null, 2))}>Export</button>
                 <button className="btn" onClick={async () => { if (confirm(`Delete "${m.name}" and its audio?${mods.some(x => x.parentId === m.id) ? ' Its variants are kept, but they will no longer be linked to it.' : ''}`)) { await deleteModule(m.id); refresh(); } }}>Delete</button>
               </div>
