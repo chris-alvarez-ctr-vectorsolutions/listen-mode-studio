@@ -444,20 +444,8 @@ Don't invent objectives. Reply with the JSON array only.`;
         <Link to="/" className="text-sm text-muted hover:text-ink">All modules</Link>
         <h1 className="mt-2 text-xl font-semibold leading-snug">{m.name}</h1>
         {m.description?.trim() && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{m.description}</p>}
-        {family.length > 1 && (
-          <nav aria-label="Versions of this module" className="mt-3 rounded-md border border-rule bg-paper p-2 text-sm">
-            <div className="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Versions</div>
-            <ul className="space-y-0.5">
-              {[...family].sort((a, b) => (a.parentId ? 1 : 0) - (b.parentId ? 1 : 0) || (a.createdAt || 0) - (b.createdAt || 0)).map(x => (
-                <li key={x.id}>{x.id === m.id
-                  ? <span className="block rounded px-1 py-0.5 font-medium">{x.parentId ? '↳ ' : ''}{x.name}</span>
-                  : <Link className="block rounded px-1 py-0.5 text-muted hover:text-ink hover:underline" to={`/m/${x.id}`}>{x.parentId ? '↳ ' : ''}{x.name}</Link>}</li>
-              ))}
-            </ul>
-          </nav>
-        )}
         <ol className="mt-6 space-y-1">
-          <li className="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">{m.parentId ? 'Inputs (from the base module)' : 'Inputs'}</li>
+          <li className="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">{m.parentId ? 'Inputs · shared with every version' : family.length > 1 ? 'Inputs · shared by every version' : 'Inputs'}</li>
           <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>1. Seed</button></li>
           {stages.map((s, i) => {
             const status = st(s.id).status;
@@ -465,27 +453,44 @@ Don't invent objectives. Reply with the JSON array only.`;
             return (
               <Fragment key={s.id}>
               {s.id === 'plan' && (
-                <li className="mt-3 px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">
-                  Listening experience
-                  {!m.parentId && canMakeVariant(m) && (naming === null ? (
-                    <button className="mt-1 block w-full rounded-md border border-rule bg-panel px-2 py-1.5 text-left text-xs font-normal normal-case tracking-normal text-ink hover:border-onair" onClick={() => setNaming(`${m.name} · variant`)}>
-                      Make another version of this module ›<span className="mt-0.5 block text-muted">Same claims, different show type or audience. This module stays as it is.</span>
-                    </button>
-                  ) : (
-                    <form className="mt-1 space-y-1.5 font-normal normal-case tracking-normal" onSubmit={async e => {
-                      e.preventDefault();
-                      if (!naming.trim()) return;
-                      await saveModule(cur());
-                      const v = await saveModule(makeVariant(cur(), naming.trim()));
-                      setNaming(null);
-                      navigate(`/m/${v.id}`);
-                    }}>
-                      <label className="block text-xs text-ink" htmlFor="variant-name">Name the new version</label>
-                      <input id="variant-name" autoFocus className="field !py-1 text-sm" value={naming} onChange={e => setNaming(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') setNaming(null); }} />
-                      <div className="flex gap-2"><button className="btn-primary !px-2.5 !py-1 text-xs" type="submit">Create</button><button className="btn !px-2.5 !py-1 text-xs" type="button" onClick={() => setNaming(null)}>Cancel</button></div>
-                    </form>
-                  ))}
-                </li>
+                <>
+                  {(family.length > 1 || (!m.parentId && canMakeVariant(m))) && (
+                    <li className="mt-4 rounded-md border border-rule bg-paper p-2">
+                      <div className="px-1 text-xs font-semibold uppercase tracking-wide text-muted">Versions</div>
+                      <p className="px-1 pb-1 text-xs text-muted">Each version starts from the same inputs above and takes its own listening experience: its own show type, industry and audience.</p>
+                      {family.length > 1 && (
+                        <ul className="space-y-0.5 text-sm">
+                          {[...family].sort((a, b) => (a.parentId ? 1 : 0) - (b.parentId ? 1 : 0) || (a.createdAt || 0) - (b.createdAt || 0)).map(x => (
+                            <li key={x.id}>{x.id === m.id
+                              ? <span className="block rounded bg-white px-1.5 py-1 font-medium ring-1 ring-rule">{x.parentId ? '↳ ' : ''}{x.name}<span className="ml-1 text-xs font-normal text-muted">(this one)</span></span>
+                              : <Link className="block rounded px-1.5 py-1 text-muted hover:text-ink hover:underline" to={`/m/${x.id}`}>{x.parentId ? '↳ ' : ''}{x.name}</Link>}</li>
+                          ))}
+                        </ul>
+                      )}
+                      <div className="mt-1 text-xs">
+                        {!m.parentId && canMakeVariant(m) && (naming === null ? (
+                                            <button className="mt-1 block w-full rounded-md border border-rule bg-panel px-2 py-1.5 text-left text-xs font-normal normal-case tracking-normal text-ink hover:border-onair" onClick={() => setNaming(`${m.name} · variant`)}>
+                                              Make another version of this module ›<span className="mt-0.5 block text-muted">Same claims, different show type or audience. This module stays as it is.</span>
+                                            </button>
+                                          ) : (
+                                            <form className="mt-1 space-y-1.5 font-normal normal-case tracking-normal" onSubmit={async e => {
+                                              e.preventDefault();
+                                              if (!naming.trim()) return;
+                                              await saveModule(cur());
+                                              const v = await saveModule(makeVariant(cur(), naming.trim()));
+                                              setNaming(null);
+                                              navigate(`/m/${v.id}`);
+                                            }}>
+                                              <label className="block text-xs text-ink" htmlFor="variant-name">Name the new version</label>
+                                              <input id="variant-name" autoFocus className="field !py-1 text-sm" value={naming} onChange={e => setNaming(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') setNaming(null); }} />
+                                              <div className="flex gap-2"><button className="btn-primary !px-2.5 !py-1 text-xs" type="submit">Create</button><button className="btn !px-2.5 !py-1 text-xs" type="button" onClick={() => setNaming(null)}>Cancel</button></div>
+                                            </form>
+                                          ))}
+                      </div>
+                    </li>
+                  )}
+                  <li className="mt-3 px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Listening experience{family.length > 1 ? ' · this version' : ''}</li>
+                </>
               )}
               <li>
                 <button disabled={!unlocked(i)} className={`flex w-full justify-between rounded-md px-3 py-2 text-left text-sm disabled:opacity-40 ${active === s.id ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive(s.id)}>
