@@ -43,12 +43,12 @@ export default function Modules() {
             <li key={m.id} className={`flex items-center justify-between gap-4 p-4 ${child ? 'bg-paper pl-10' : ''}`}>
               <div>
                 <Link to={`/m/${m.id}`} className="font-medium hover:underline">{child ? variantLabel(m) : m.name}</Link>
-                {child && <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-xs text-muted ring-1 ring-rule">Version</span>}
+                {child && <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-xs text-muted ring-1 ring-rule">Variant</span>}
                 {m.description?.trim() && <div className="mt-0.5 line-clamp-2 whitespace-pre-wrap text-sm text-muted">{m.description}</div>}
                 <div className="text-sm text-muted">Updated {new Date(m.updatedAt).toLocaleString()}</div>
               </div>
               <div className="flex gap-2">
-                {!child && canMakeVariant(m) && <Link className="btn" to={`/m/${m.id}?stage=newversion`}>New version</Link>}
+                {!child && canMakeVariant(m) && <Link className="btn" to={`/m/${m.id}?stage=newversion`}>New variant</Link>}
                 <button className="btn" onClick={() => download(`${m.name}.module.json`, JSON.stringify(m, null, 2))}>Export</button>
                 <button className="btn" onClick={async () => { if (confirm(`Delete "${m.name}" and its audio?${mods.some(x => x.parentId === m.id) ? ' Its variants are kept, but they will no longer be linked to it.' : ''}`)) { await deleteModule(m.id); refresh(); } }}>Delete</button>
               </div>
