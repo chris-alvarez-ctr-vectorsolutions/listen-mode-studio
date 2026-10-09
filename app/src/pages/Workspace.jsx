@@ -459,7 +459,7 @@ Don't invent objectives. Reply with the JSON array only.`;
                       await saveModule(cur());
                       const v = await saveModule(makeVariant(cur(), name.trim()));
                       navigate(`/m/${v.id}`);
-                    }}>Inputs are ready. Make a variant for another show type or audience ›</button>
+                    }}>Make another version of this module ›<span className="mt-0.5 block text-muted">Same claims, different show type or audience. This module stays as it is.</span></button>
                   )}
                 </li>
               )}
