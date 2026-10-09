@@ -47,8 +47,8 @@ Runtime = words / 140, plus holds, plus about 3 seconds per sting.
 - Render text holds spoken words, bracketed delivery tags and punctuation only. SFX, beds, holds and stings live on the cue sheet.
 - Speaker labels (DANA:, RAY:) map lines to voices. Send only the text after the colon.
 - Tags: about four to eight per part, only where the meaning or emotion changes, never on consecutive lines. Place a tag just before the line it shapes, or just after a line as a reaction ([sighs], [laughs]). Keep to each voice's palette. Never [quietly], [softly] or a variant on a host, expert or narrator. A tag may be two short descriptive words in that voice's register ([warm, amused], [dry, deadpan]); never staging or sound tags ([music], [standing]).
-  - Ray: [dry] [matter-of-fact] [thoughtful] [warmly] [laughs] [amused] [reassuring] [sighs]
-  - Dana: [playful] [skeptical] [curious] [surprised] [sighs] [laughs] [amused] [warmly] [jumping in]
+  - Ray: [dry] [matter-of-fact] [thoughtful] [warmly] [laughs] [amused] [reassuring] [sighs] [patient] [firmly] [concerned] [wry] [slowly] [chuckles] [exhales] [clears throat]
+  - Dana: [playful] [skeptical] [curious] [surprised] [sighs] [laughs] [amused] [warmly] [jumping in] [realizing] [impressed] [wry] [unsure] [relieved] [mock-serious] [thinking out loud] [exhales] [clears throat]
 - Emphasis: CAPS on one or two words per part. No SSML.
 - Short pauses: an ellipsis, a dash or punctuation (never [pause] or SSML break tags). Anything 2 seconds or longer is a hold on the cue sheet.
 - Spell out as spoken: numbers ("more than nine out of ten"), initialisms (H-I-V, P-P-E, U-S).
