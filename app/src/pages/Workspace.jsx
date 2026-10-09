@@ -458,6 +458,7 @@ Don't invent objectives. Reply with the JSON array only.`;
   return (
     <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
       <aside>
+        {!isVersion && <Link to="/" className="text-sm text-muted hover:text-ink">All modules</Link>}
         {isVersion && parent && <p className="text-sm"><Link className="text-muted hover:text-ink" to={`/m/${parent.id}`}>← {parent.name}</Link></p>}
         {!isVersion && <h1 className="mt-1 text-xl font-semibold leading-snug">{m.name}</h1>}
         {!isVersion && m.description?.trim() && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{m.description}</p>}
