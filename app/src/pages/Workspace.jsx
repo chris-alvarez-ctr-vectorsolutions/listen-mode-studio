@@ -476,25 +476,20 @@ Don't invent objectives. Reply with the JSON array only.`;
                   </li>
                 );
               })}
-              <li className="mt-4 px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Variants</li>
-              {(() => {
-                const kids = family.filter(x => x.id !== m.id).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-                const fmt = x => resolveSetup(x.setup).conversation?.name || 'Variant';
-                const seen = {};
-                return kids.map(x => {
-                  const same = kids.filter(y => fmt(y) === fmt(x)).length > 1;
-                  seen[fmt(x)] = (seen[fmt(x)] || 0) + 1;
-                  const status = variantBehind(x, m) ? '⚠ update' : progressOf(x);
-                  return (
-                    <li key={x.id}>
-                      <Link title={versionLabel(x.setup)} className="flex items-baseline justify-between gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-panel" to={`/m/${x.id}`}>
-                        <span className="truncate">{fmt(x)}{same ? ` ${seen[fmt(x)]}` : ''}</span>
-                        <span className={`shrink-0 text-xs ${variantBehind(x, m) ? 'text-amber-900' : 'text-muted'}`}>{status}</span>
-                      </Link>
-                    </li>
-                  );
-                });
-              })()}
+              <li className="px-1 pb-1 pt-6 text-xs font-semibold uppercase tracking-wide text-muted">Variants</li>
+              {family.filter(x => x.id !== m.id).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).map(x => {
+                const r = resolveSetup(x.setup);
+                const behind = variantBehind(x, m);
+                return (
+                  <li key={x.id}>
+                    <Link className="block rounded-md px-3 py-1.5 hover:bg-panel" to={`/m/${x.id}`}>
+                      <span className="flex items-baseline justify-between gap-2 text-sm"><span className="truncate">{r.industry?.name || 'Industry not chosen'}</span>
+                        <span className={`shrink-0 text-xs ${behind ? 'text-amber-900' : 'text-muted'}`}>{behind ? '⚠ update' : progressOf(x)}</span></span>
+                      <span className="block truncate text-xs text-muted">{[r.conversation?.name, r.role?.name].filter(Boolean).join(' · ')}</span>
+                    </Link>
+                  </li>
+                );
+              })}
               {ownRun && <li className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">This module still holds a script from before variants. <button className="underline" onClick={moveRun}>Move it into a variant</button></li>}
               <li>
                 <button className={`w-full rounded-md px-3 py-1.5 text-left text-sm ${active === 'newversion' ? 'bg-ink text-white' : 'text-muted hover:bg-panel hover:text-ink'}`} onClick={() => { setNv(null); setActive('newversion'); }}>＋ New variant</button>
@@ -506,12 +501,11 @@ Don't invent objectives. Reply with the JSON array only.`;
               <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>
                 Basics
               </button></li>
-              {parent && variantBehind(m, parent) && <li className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">⚠ The inputs changed in {parent.name}. Update this variant.</li>}
             </>
           )}
           {showExperience && (
             <>
-              <li className="mt-8 px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Listening experience</li>
+              <li className="px-1 pb-1 pt-8 text-xs font-semibold uppercase tracking-wide text-muted">Listening experience</li>
               {stages.map((s, i) => {
                 if (s.id === 'ledger' && isVersion) return null;
                 if (!isVersion && i === 0) return null;

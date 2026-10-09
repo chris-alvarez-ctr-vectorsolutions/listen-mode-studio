@@ -35,7 +35,7 @@ function inherited(p) {
 // A version is named by what it is: the show format, the industry and the learner role. There is nothing to type.
 export function versionLabel(setup) {
   const r = resolveSetup(setup);
-  return [r.conversation?.name, r.industry?.name, r.role?.name].filter(Boolean).join(' · ');
+  return [r.industry?.name, r.role?.name, r.conversation?.name].filter(Boolean).join(' · ');
 }
 export const versionName = (root, setup) => `${root.name} · ${versionLabel(setup)}`;
 
