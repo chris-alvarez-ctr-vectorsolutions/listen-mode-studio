@@ -26,7 +26,7 @@ The pathway table in each module fixes which versions exist, so don't add, drop 
 4a. Introduce every voice before it speaks. The first time a voice other than the host is heard in a part, the host names that person and their role in one plain line and hands off to them ("Here's [name], who [does their role]."). Never narrate a person in the third person and then cut to a different voice with no hand-off. A person the host only talks about is not a voice, and the listener should be able to tell the difference.
 5. Test-up and Reinforced versions stand alone. The learner never heard the Base, and the listen has no memory of it.
 6. One shared anchor. The module's plan names one setting or object (a property tray, a booking counter). Every part, including Test-up and Reinforced versions, uses it concretely, so parts hold together without bridges. Using the anchor is not a reference to another part.
-7. The open starts on the sharpest line in content that plays in every listen (a quote from a story, a striking detail), then gives the names. It is not an agenda read-out. The close, written in the Seams stage, ends on a reflection question or a callback to the last part the learner heard.
+7. The open starts on the sharpest line in content that plays in every listen (a quote from a story, a striking detail), then gives the names. It is not an agenda read-out. The close is a short fallback part that ends on a reflection question or a callback to content every learner hears, never a thank-you. The Seams stage writes a closer for each possible last topic, and it replaces the close in a listen where it fits.
 
 ## 5. Fact rules (these override everything else)
 
