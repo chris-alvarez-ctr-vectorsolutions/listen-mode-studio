@@ -459,7 +459,7 @@ Don't invent objectives. Reply with the JSON array only.`;
               ⚠ {staleParts.length} recorded part{staleParts.length > 1 ? 's' : ''} out of date after a claim changed
             </Link></li>
           )}
-          <li><Link to={`/m/${m.id}/render`} className={`mt-1 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>9. Render audio{audioOutdated > 0 && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900">⟳ outdated</span>}</Link></li>
+          <li><Link to={`/m/${m.id}/render`} className={`mt-1 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>10. Render audio{audioOutdated > 0 && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900">⟳ outdated</span>}</Link></li>
           {(m.runLog || []).length > 0 && (
             <li><Link to={`/m/${m.id}/runs`} className="mt-3 block px-1 text-xs text-muted underline hover:text-ink">Run log · {formatDuration(m.runLog.reduce((n, r) => n + (r.ms || 0), 0))} over {m.runLog.length} run{m.runLog.length > 1 ? 's' : ''}</Link></li>
           )}
