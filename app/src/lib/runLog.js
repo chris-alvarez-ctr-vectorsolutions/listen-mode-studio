@@ -1,5 +1,7 @@
 // A record of every turn with Claude, kept on the module (and so in its export): which step, what kind of turn, how long
-// it took, how much was sent and how much came back. Entry: { at, stage, action, ms, sent, words, retries, ok }.
+// it took, how much was sent and how much came back. Entry: { at, stage, action, ms, sent, words, retries, ok, effort, model, outTokens, firstMs }.
+// effort: the thinking level the call asked for. model: the model that answered. outTokens: tokens written, thinking included.
+// firstMs: how long until the first word appeared, so the wait before writing (thinking) can be told from the writing itself.
 
 export const ACTION_LABEL = { run: 'Run', 'run again': 'Run again', revision: 'Revision', 'apply fixes': 'Apply fixes' };
 

@@ -8,6 +8,8 @@ export const DEFAULT_SETTINGS = {
   appToken: '',
   claudeModel: 'claude-opus-5-5',
   maxTokens: 16000,
+  // Thinking depth for each kind of call (low, medium, high, xhigh, max). Higher thinks longer and writes more carefully.
+  effort: { ledger: 'high', plan: 'medium', beats: 'medium', draft: 'medium', validity: 'high', editor: 'high', performance: 'medium', seams: 'medium', patch: 'low', helper: 'low' },
   elevenModel: 'eleven_v4',
   stability: 0,            // 0 Creative, 0.5 Natural, 1 Robust (sent with every dialogue request)
   outputFormat: 'mp3_44100_128',
@@ -26,7 +28,8 @@ export const DEFAULT_SETTINGS = {
 
 export function loadSettings() {
   try {
-    const s = { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') };
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    const s = { ...DEFAULT_SETTINGS, ...saved, effort: { ...DEFAULT_SETTINGS.effort, ...saved.effort } };
     if (s.claudeModel === 'claude-sonnet-5') s.claudeModel = DEFAULT_SETTINGS.claudeModel;   // the old default
     return s;
   }

@@ -3,6 +3,9 @@ import { DEFAULT_SETTINGS, loadSettings, saveSettings } from '../lib/store.js';
 import { listModels, listVoices } from '../lib/eleven.js';
 import { clearTheme, hasCustomTheme, saveTheme, themeBlob } from '../lib/theme.js';
 
+const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'];
+const EFFORT_STEPS = [['ledger', 'Claims ledger (and claim fixes)'], ['plan', 'Episode plan'], ['beats', 'Beat sheets'], ['draft', 'Draft'], ['validity', 'Validity pass'], ['editor', 'Editor pass'], ['patch', 'Applying the editor\'s fixes'], ['performance', 'Performance pass'], ['seams', 'Seams'], ['helper', 'Reading objectives from the seed']];
+
 export default function Settings() {
   const [s, setS] = useState(loadSettings);
   const [voices, setVoices] = useState([]);
@@ -59,6 +62,20 @@ export default function Settings() {
           <div><label className="label" htmlFor="mt">Max output tokens</label>
             <input id="mt" type="number" className="field" value={s.maxTokens} onChange={e => set('maxTokens', e.target.value)} /></div>
         </div>
+      </section>
+
+      <section className="space-y-4 rounded-lg border border-rule bg-panel p-5">
+        <h2 className="font-semibold">Effort for each step</h2>
+        <p className="text-sm text-muted">How long Claude thinks before it writes. Higher is slower and more careful; lower is faster. Claude can't switch thinking off, so Low is the least. The Run log shows the effort, the time to the first word and the tokens written for each run, so you can compare.</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {EFFORT_STEPS.map(([key, label]) => (
+            <div key={key}><label className="label" htmlFor={`ef-${key}`}>{label}</label>
+              <select id={`ef-${key}`} className="select" value={s.effort?.[key] || DEFAULT_SETTINGS.effort[key]} onChange={e => set('effort', { ...s.effort, [key]: e.target.value })}>
+                {EFFORT_LEVELS.map(l => <option key={l} value={l}>{l[0].toUpperCase() + l.slice(1)}{l === DEFAULT_SETTINGS.effort[key] ? ' (suggested)' : ''}</option>)}
+              </select></div>
+          ))}
+        </div>
+        <button className="btn" onClick={() => set('effort', { ...DEFAULT_SETTINGS.effort })}>Reset to the suggested levels</button>
       </section>
 
       <section className="space-y-4 rounded-lg border border-rule bg-panel p-5">

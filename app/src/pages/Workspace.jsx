@@ -155,6 +155,11 @@ export default function Workspace() {
     const trackLive = t => { setLive(t); lastText = t; };
     const trackSent = v => { setSent(v); sentTokens = v; };
     const trackRetry = (n, why) => { retries = n; setNote(`The connection dropped (${why}) Retrying, attempt ${n + 1} of 3.`); };
+    // What each call is told about its effort, and what comes back about it: the model that answered, the tokens it wrote
+    // (thinking included) and how long it took to start writing, so effort can be tuned from the run log.
+    const effort = loadSettings().effort?.[opts.patch ? 'patch' : stage.id];
+    let model = null, outTokens = 0, firstAt = 0;
+    const extras = { effort, onMeta: m => { model = m.model || model; outTokens += m.outputTokens || 0; }, onFirstText: () => { firstAt ||= Date.now(); } };
     setError(''); setBusy(stage.id); setLive(''); setNote(''); setStatus(null); setSent(0); busySince.current = Date.now();
     abort.current = new AbortController();
     try {
@@ -170,7 +175,7 @@ export default function Workspace() {
         const ledger = mod.stages.ledger?.output;
         const ledgerBlock = ledger ? `## Claims ledger (decisions applied)\n\n${withSignedNote(ledger, mod.ledgerSigned)}\n\n` : '';
         const content = `${seedBlock(mod, withSources)}\n\n${pathwayBlock(mod.objectives)}\n\n${ledgerBlock}## Script to review\n\n${scriptOnly(mod.currentScript)}\n\n${prompt}`;
-        reply = await callClaude({ system, messages: [{ role: 'user', content }], onText: trackLive, onStatus: setStatus, onSize: trackSent, signal: abort.current.signal, onRetry: trackRetry });
+        reply = await callClaude({ system, messages: [{ role: 'user', content }], onText: trackLive, onStatus: setStatus, onSize: trackSent, signal: abort.current.signal, onRetry: trackRetry, ...extras });
         await update({ stages: { ...cur().stages, editor: { status: 'ready', output: reply, basedOn: stampFor(mod, 'editor') } }, itemState: { ...(cur().itemState || {}), editor: {} } });
         ok = true; return true;
       }
@@ -179,13 +184,13 @@ export default function Workspace() {
         // makes them. Anything that can't be placed exactly goes back to the model as a rewrite of just those changes.
         const script = scriptOnly(mod.currentScript);
         let next = script, placed = 0, rewritten = 0, edits = null, failed;
-        try { edits = parseEdits(await callClaude({ system, messages: [...mod.thread, { role: 'user', content: patchRequest(script, opts.patch) }], onText: trackLive, onStatus: setStatus, onSize: trackSent, signal: abort.current.signal, onRetry: trackRetry })); }
+        try { edits = parseEdits(await callClaude({ system, messages: [...mod.thread, { role: 'user', content: patchRequest(script, opts.patch) }], onText: trackLive, onStatus: setStatus, onSize: trackSent, signal: abort.current.signal, onRetry: trackRetry, ...extras })); }
         catch (e) { if (!(e instanceof SyntaxError || /"edits" list/.test(e.message))) throw e; }   // an unreadable reply falls back to a rewrite
         if (edits) { const r = applyEdits(script, edits); next = r.script; placed = r.applied.length; failed = r.failed; }
         else failed = [{ edit: { text: opts.patch }, reason: 'the reply could not be read' }];
         if (failed.length) {
           setLive(''); setNote(`${failed.length} edit${failed.length > 1 ? 's' : ''} couldn't be placed exactly. Writing ${failed.length > 1 ? 'those' : 'that one'} out in full.`);
-          const redo = await callClaude({ system, messages: [...mod.thread, { role: 'user', content: rewriteRequest(next, failed) }], onText: trackLive, onStatus: setStatus, onSize: trackSent, signal: abort.current.signal, onRetry: trackRetry });
+          const redo = await callClaude({ system, messages: [...mod.thread, { role: 'user', content: rewriteRequest(next, failed) }], onText: trackLive, onStatus: setStatus, onSize: trackSent, signal: abort.current.signal, onRetry: trackRetry, ...extras });
           next = scriptOnly(redo); rewritten = failed.length;
         }
         await update({
@@ -208,7 +213,7 @@ export default function Workspace() {
       let send = thread.length > 1 ? [{ ...thread[0], content: freshSeed(thread[0].content, mod, withSources) }, ...thread.slice(1)] : thread;
       // The ledger's own reply is the second message of the conversation. Later stages read it, so tell them it has been signed.
       if (stage.id !== 'ledger' && send[1]?.role === 'assistant') send = [send[0], { ...send[1], content: withSignedNote(send[1].content, mod.ledgerSigned) }, ...send.slice(2)];
-      reply = await callClaude({ system, messages: send, onText: trackLive, onStatus: setStatus, onSize: trackSent, signal: abort.current.signal, onRetry: trackRetry });
+      reply = await callClaude({ system, messages: send, onText: trackLive, onStatus: setStatus, onSize: trackSent, signal: abort.current.signal, onRetry: trackRetry, ...extras });
       const patch = opts.applied ? {
         // Fixes from the editor pass: the script changes, and the result is recorded on the editor stage. The validity
         // stage keeps what it produced. The fixes that went in are marked as applied.
@@ -246,7 +251,7 @@ export default function Workspace() {
     } finally {
       setBusy(null); setLive(''); setNote(''); setStatus(null);
       const words = lastText.trim() ? lastText.trim().split(/\s+/).length : 0;
-      await update({ runLog: [...(cur().runLog || []), { at: startedAt, stage: stage.id, action, ms: Date.now() - startedAt, sent: sentTokens, words, retries, ok }] });
+      await update({ runLog: [...(cur().runLog || []), { at: startedAt, stage: stage.id, action, ms: Date.now() - startedAt, sent: sentTokens, words, retries, ok, effort, model, outTokens, firstMs: firstAt ? firstAt - startedAt : 0 }] });
       const what = opts.applied ? 'Fixes applied' : `${stage.title}${action === 'revision' ? ' revised' : ' done'}`;
       notifyWhenAway(`${ok ? '✓' : '✕'} ${ok ? what : `${stage.title} failed`} · ${cur().name}`);
     }
@@ -347,7 +352,7 @@ export default function Workspace() {
       const ledger = c.stages.ledger;
       const thread = c.thread.slice(0, (ledger.threadStart ?? 0) + 2);
       const ask = `For ${id} only: propose a replacement claim in one plain sentence that the source content fully supports, or start with "needs SME: " and give the question an SME must answer. Never invent a fact. Reply with that one line and nothing else.`;
-      const reply = (await callClaude({ system: systemPrompt(loadKit(), cur().setup), messages: [...thread, { role: 'user', content: ask }] })).trim().replace(/^["“]|["”]$/g, '');
+      const reply = (await callClaude({ system: systemPrompt(loadKit(), cur().setup), messages: [...thread, { role: 'user', content: ask }], effort: loadSettings().effort?.ledger })).trim().replace(/^["“]|["”]$/g, '');
       await update({ claimMeta: { ...(cur().claimMeta || {}), [id]: { ...(cur().claimMeta || {})[id], suggestion: reply } } });
     } catch (e) { setError(e.message); }
     finally { setSuggestingId(null); }
@@ -393,6 +398,7 @@ Don't invent objectives. Reply with the JSON array only.`;
       const reply = await callClaude({
         system: 'You read training course seeds and scripts and extract their learning objectives. You reply with JSON only.',
         messages: [{ role: 'user', content: `${c.seed || ''}\n\n${sources}\n\n---\n\n${ask}` }],
+        effort: loadSettings().effort?.helper,
       });
       const list = JSON.parse(reply.slice(reply.indexOf('['), reply.lastIndexOf(']') + 1));
       const objectives = list.map(normalizeObjective);

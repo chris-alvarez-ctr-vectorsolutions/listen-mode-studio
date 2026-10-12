@@ -17,7 +17,7 @@ const STALL_MS = 90000;
 const FIRST_MS = 150000;
 
 // Streams a Messages API call through the worker. onText gets the growing reply.
-async function streamOnce({ system, messages, onText, onStatus, signal: userSignal, stallMs = STALL_MS, firstMs = FIRST_MS }) {
+async function streamOnce({ system, messages, onText, onStatus, effort, onMeta, onFirstText, signal: userSignal, stallMs = STALL_MS, firstMs = FIRST_MS }) {
   const settings = loadSettings();
   const ac = new AbortController();
   const onUserAbort = () => ac.abort();
@@ -28,7 +28,7 @@ async function streamOnce({ system, messages, onText, onStatus, signal: userSign
   let firstTimer = setTimeout(() => { stalled = 'first'; ac.abort(); }, firstMs);
   const gotContent = () => { clearTimeout(firstTimer); firstTimer = null; };
   try {
-    return await readStream({ settings, system, messages, onText, onStatus, signal: ac.signal, arm, gotContent });
+    return await readStream({ settings, system, messages, onText, onStatus, effort, onMeta, onFirstText, signal: ac.signal, arm, gotContent });
   } catch (e) {
     // A stall is a dead connection, which is safe to retry like any other dropped one.
     if (stalled && !userSignal?.aborted) {
@@ -43,12 +43,12 @@ async function streamOnce({ system, messages, onText, onStatus, signal: userSign
   }
 }
 
-async function readStream({ settings, system, messages, onText, onStatus, signal, arm, gotContent }) {
+async function readStream({ settings, system, messages, onText, onStatus, effort, onMeta, onFirstText, signal, arm, gotContent }) {
   const res = await fetch(`${workerBase(settings)}/anthropic/v1/messages`, {
     method: 'POST',
     signal,
     headers: workerHeaders(settings, { 'content-type': 'application/json', 'anthropic-version': '2023-06-01' }),
-    body: JSON.stringify({ model: settings.claudeModel, max_tokens: Number(settings.maxTokens) || 16000, system, messages, stream: true }),
+    body: JSON.stringify({ model: settings.claudeModel, max_tokens: Number(settings.maxTokens) || 16000, system, messages, stream: true, ...(effort ? { output_config: { effort } } : {}) }),
   });
   if (!res.ok) throw new Error(`Claude request failed (${res.status}): ${await res.text()}`);
 
@@ -57,6 +57,7 @@ async function readStream({ settings, system, messages, onText, onStatus, signal
   let buffer = '';
   let text = '';
   let stopReason = null;
+  let model = null, outputTokens = 0, wrote = false;
   let thinking = 0;
   let silentThinking = false;
   let eventCount = 0;
@@ -82,7 +83,9 @@ async function readStream({ settings, system, messages, onText, onStatus, signal
       if (data.type === 'content_block_start' || kind === 'text_delta' || kind === 'thinking_delta') gotContent();
       if (data.type === 'content_block_start' && data.content_block?.type === 'thinking') silentThinking = true;
       if (kind !== 'text_delta' && kind !== 'thinking_delta') report(kind);
+      if (data.type === 'message_start') model = data.message?.model ?? model;
       if (data.type === 'content_block_delta' && data.delta?.type === 'text_delta') {
+        if (!wrote) { wrote = true; onFirstText?.(); }
         text += data.delta.text;
         onText?.(text);
       } else if (data.type === 'content_block_delta' && data.delta?.type === 'thinking_delta') {
@@ -90,11 +93,13 @@ async function readStream({ settings, system, messages, onText, onStatus, signal
         if (counts.thinking_delta % 20 === 1) report('thinking_delta');
       } else if (data.type === 'message_delta') {
         stopReason = data.delta?.stop_reason ?? stopReason;
+        outputTokens = data.usage?.output_tokens ?? outputTokens;
       } else if (data.type === 'error') {
         throw new Error(data.error?.message || 'Claude returned an error.');
       }
     }
   }
+  onMeta?.({ model, outputTokens });
   if (stopReason === 'max_tokens') text += '\n\n⟨Output stopped at the token limit. Raise "Max output tokens" in Settings and run this stage again.⟩';
   return text;
 }

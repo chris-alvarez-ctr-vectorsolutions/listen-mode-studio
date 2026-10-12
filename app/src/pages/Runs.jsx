@@ -16,6 +16,7 @@ export default function Runs() {
   const log = m.runLog || [];
   const sum = summarize(log);
   const stages = DEFAULT_STAGES.filter(s => sum.byStage[s.id]);
+  const models = [...new Set(log.map(r => r.model).filter(Boolean))];
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -53,23 +54,26 @@ export default function Runs() {
             <h2 className="mb-1 font-semibold">Every turn</h2>
             <div className="overflow-x-auto rounded-lg border border-rule bg-panel">
               <table className="w-full border-collapse font-ui text-sm">
-                <thead><tr className="text-left text-xs uppercase tracking-wide text-muted"><th className="px-3 py-2">When</th><th className="px-3 py-2">Step</th><th className="px-3 py-2">What</th><th className="px-3 py-2 text-right">Time</th><th className="px-3 py-2 text-right">Sent</th><th className="px-3 py-2 text-right">Words back</th><th className="px-3 py-2">Result</th></tr></thead>
+                <thead><tr className="text-left text-xs uppercase tracking-wide text-muted"><th className="px-3 py-2">When</th><th className="px-3 py-2">Step</th><th className="px-3 py-2">What</th><th className="px-3 py-2">Effort</th><th className="px-3 py-2 text-right">Time</th><th className="px-3 py-2 text-right">First word</th><th className="px-3 py-2 text-right">Sent</th><th className="px-3 py-2 text-right">Words back</th><th className="px-3 py-2 text-right">Tokens out</th><th className="px-3 py-2">Result</th></tr></thead>
                 <tbody>
                   {[...log].reverse().map((r, i) => (
                     <tr key={i} className="border-t border-rule">
                       <td className="whitespace-nowrap px-3 py-2">{new Date(r.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</td>
                       <td className="px-3 py-2">{stageName(r.stage)}</td>
                       <td className="px-3 py-2">{ACTION_LABEL[r.action] || r.action}</td>
+                      <td className="px-3 py-2" title={r.model || ''}>{r.effort || ''}</td>
                       <td className="px-3 py-2 text-right">{formatDuration(r.ms)}</td>
+                      <td className="px-3 py-2 text-right">{r.firstMs ? formatDuration(r.firstMs) : ''}</td>
                       <td className="px-3 py-2 text-right">{r.sent ? `~${r.sent.toLocaleString()}` : ''}</td>
                       <td className="px-3 py-2 text-right">{r.words ? r.words.toLocaleString() : ''}</td>
+                      <td className="px-3 py-2 text-right">{r.outTokens ? r.outTokens.toLocaleString() : ''}</td>
                       <td className="px-3 py-2">{r.ok ? 'Finished' : <span className="text-amber-900">Failed or stopped</span>}{r.retries > 0 && <span className="ml-2 text-xs text-muted">{r.retries} retr{r.retries > 1 ? 'ies' : 'y'}</span>}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <p className="mt-2 text-xs text-muted">"Sent" is an estimate of what went to Claude (about four characters to a token). Time runs from pressing the button to the result being saved.</p>
+            <p className="mt-2 text-xs text-muted">"Sent" is an estimate of what went to Claude (about four characters to a token). Time runs from pressing the button to the result being saved. "First word" is how long Claude thought before it started writing, and "Tokens out" counts that thinking too.{models.length > 0 && ` Model${models.length > 1 ? 's' : ''} that answered: ${models.join(', ')}.`}</p>
           </section>
         </>
       )}
