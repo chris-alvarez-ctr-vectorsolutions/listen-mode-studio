@@ -9,4 +9,5 @@ ALLOWED_ORIGINS = "http://localhost:5173,https://chris-alvarez-ctr-vectorsolutio
 # Secrets (set with `wrangler secret put NAME`):
 #   ANTHROPIC_API_KEY
 #   ELEVENLABS_API_KEY
-#   APP_TOKEN   (optional; if set, the app must send it as x-app-token)
+#   APP_TOKEN   (required; the app must send it as x-app-token. Without it the worker refuses every request.)
+#   For `wrangler dev`, put all three in worker/.dev.vars (gitignored).

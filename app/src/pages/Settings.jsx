@@ -47,7 +47,7 @@ export default function Settings() {
         <h2 className="font-semibold">Connection</h2>
         <div><label className="label" htmlFor="w">Worker URL</label>
           <input id="w" className="field" placeholder="https://module-audio-studio-proxy.your-account.workers.dev" value={s.workerUrl} onChange={e => set('workerUrl', e.target.value)} /></div>
-        <div><label className="label" htmlFor="t">App token (only if your worker requires one)</label>
+        <div><label className="label" htmlFor="t">App token (the APP_TOKEN secret you set on the worker)</label>
           <input id="t" type="password" className="field" value={s.appToken} onChange={e => set('appToken', e.target.value)} /></div>
       </section>
 

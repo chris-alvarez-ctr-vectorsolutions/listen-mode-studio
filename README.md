@@ -17,7 +17,7 @@ cd worker
 npm install
 npx wrangler secret put ANTHROPIC_API_KEY
 npx wrangler secret put ELEVENLABS_API_KEY
-npx wrangler secret put APP_TOKEN        # optional shared token the app sends as x-app-token
+npx wrangler secret put APP_TOKEN        # required: the shared token the app sends as x-app-token. Without it the worker refuses every request.
 ```
 
 Edit `ALLOWED_ORIGINS` in `wrangler.toml` to your GitHub Pages origin and `http://localhost:5173`, then `npx wrangler deploy`.
@@ -30,7 +30,7 @@ npm install
 npm run dev
 ```
 
-Open Settings, paste the worker URL (and app token if you set one), click **Load my voices and models**, pick the ElevenLabs model, and map each speaker (DANA, RAY, JACOB) to a voice. New browsers start with the team's default model (Eleven v4), stability (Creative) and voices for DANA, RAY and JACOB already filled in; change them here only if you need to. Settings you've saved in your browser take priority over the defaults.
+Open Settings, paste the worker URL and the app token, click **Load my voices and models**, pick the ElevenLabs model, and map each speaker (DANA, RAY, JACOB) to a voice. New browsers start with the team's default model (Eleven v4), stability (Creative) and voices for DANA, RAY and JACOB already filled in; change them here only if you need to. Settings you've saved in your browser take priority over the defaults.
 
 ### 3. Deploy the app
 

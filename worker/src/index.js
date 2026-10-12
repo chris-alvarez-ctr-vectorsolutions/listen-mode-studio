@@ -18,15 +18,26 @@ function corsHeaders(origin, env) {
   };
 }
 
+// Compares two secrets without leaking, through timing, how much of one matched.
+async function sameSecret(a, b) {
+  const hash = async t => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)));
+  const x = await hash(a), y = await hash(b);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
     const cors = corsHeaders(origin, env);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
-    if (env.APP_TOKEN && request.headers.get('x-app-token') !== env.APP_TOKEN) {
-      return new Response(JSON.stringify({ error: 'Missing or wrong app token.' }), { status: 401, headers: { ...cors, 'content-type': 'application/json' } });
-    }
+    // The token is the only real gate: CORS and the Origin header stop other websites, not a script. With no token
+    // configured the worker refuses everything, so a missing secret can't leave the API keys open to anyone with the URL.
+    const json = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...cors, 'content-type': 'application/json' } });
+    if (!env.APP_TOKEN) return json(500, 'The worker has no APP_TOKEN secret set, so it refuses all requests. Run: wrangler secret put APP_TOKEN');
+    if (!(await sameSecret(request.headers.get('x-app-token') || '', env.APP_TOKEN))) return json(401, 'Missing or wrong app token.');
 
     const url = new URL(request.url);
     const [, service, ...rest] = url.pathname.split('/');
