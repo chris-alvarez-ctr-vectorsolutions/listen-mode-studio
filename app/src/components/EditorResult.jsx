@@ -8,7 +8,7 @@ export default function EditorResult({ applied, review, state, script }) {
   const legacy = !applied ? Object.values(state || {}).filter(v => v.decision === 'apply' || v.decision === 'done').length : 0;
   const n = applied ? applied.count || 0 : legacy;
   const time = applied?.at ? new Date(applied.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
-  const rest = applied ? [applied.skipped ? `${applied.skipped} skipped` : '', applied.undecided ? `${applied.undecided} not decided` : '', time ? `applied at ${time}` : ''].filter(Boolean).join(' · ') : '';
+  const rest = applied ? [applied.rewritten ? `${applied.placed || 0} edit${applied.placed === 1 ? '' : 's'} placed exactly, ${applied.rewritten} written out in full` : '', applied.skipped ? `${applied.skipped} skipped` : '', applied.undecided ? `${applied.undecided} not decided` : '', time ? `applied at ${time}` : ''].filter(Boolean).join(' · ') : '';
   return (
     <div className="space-y-4">
       <div className={`rounded-md border p-4 ${n ? 'border-dana bg-panel' : 'border-rule bg-paper'}`}>

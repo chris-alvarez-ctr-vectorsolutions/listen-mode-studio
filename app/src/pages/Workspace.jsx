@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { deleteModule, deleteModuleAudio, getModule, listModules, loadSettings, moveModuleAudio, saveModule } from '../lib/store.js';
 import { addRuleToKit, fillStagePrompt, loadKit, systemPrompt } from '../lib/kit.js';
 import { callClaude } from '../lib/claude.js';
+import { mechanicalReport } from '../lib/lint.js';
+import { applyEdits, parseEdits, patchRequest, rewriteRequest } from '../lib/patches.js';
 import { composeSeed, fieldsFor, missingRequired, seedFieldsOf } from '../lib/seed.js';
 import { parsePerformance, scriptOnly, stripBannedTags } from '../lib/script.js';
 import { applySeams, parseSeams, seamBlock } from '../lib/seams.js';
@@ -172,11 +174,35 @@ export default function Workspace() {
         await update({ stages: { ...cur().stages, editor: { status: 'ready', output: reply, basedOn: stampFor(mod, 'editor') } }, itemState: { ...(cur().itemState || {}), editor: {} } });
         ok = true; return true;
       }
+      if (opts.patch) {
+        // Editor fixes as exact edits: the model returns small { part, find, replace } changes, and code checks and
+        // makes them. Anything that can't be placed exactly goes back to the model as a rewrite of just those changes.
+        const script = scriptOnly(mod.currentScript);
+        let next = script, placed = 0, rewritten = 0, edits = null, failed;
+        try { edits = parseEdits(await callClaude({ system, messages: [...mod.thread, { role: 'user', content: patchRequest(script, opts.patch) }], onText: trackLive, onStatus: setStatus, onSize: trackSent, signal: abort.current.signal, onRetry: trackRetry })); }
+        catch (e) { if (!(e instanceof SyntaxError || /"edits" list/.test(e.message))) throw e; }   // an unreadable reply falls back to a rewrite
+        if (edits) { const r = applyEdits(script, edits); next = r.script; placed = r.applied.length; failed = r.failed; }
+        else failed = [{ edit: { text: opts.patch }, reason: 'the reply could not be read' }];
+        if (failed.length) {
+          setLive(''); setNote(`${failed.length} edit${failed.length > 1 ? 's' : ''} couldn't be placed exactly. Writing ${failed.length > 1 ? 'those' : 'that one'} out in full.`);
+          const redo = await callClaude({ system, messages: [...mod.thread, { role: 'user', content: rewriteRequest(next, failed) }], onText: trackLive, onStatus: setStatus, onSize: trackSent, signal: abort.current.signal, onRetry: trackRetry });
+          next = scriptOnly(redo); rewritten = failed.length;
+        }
+        await update({
+          thread: [...mod.thread, { role: 'user', content: userText }, { role: 'assistant', content: next }],
+          currentScript: next,
+          stages: { ...cur().stages, editor: { ...st('editor'), status: 'approved', applied: { ...opts.applied(), script: next, placed, rewritten } } },
+          itemState: { ...(cur().itemState || {}), editor: Object.fromEntries(Object.entries((cur().itemState || {}).editor || {}).map(([k, v]) => [k, v.decision === 'apply' ? { ...v, decision: 'done' } : v])) },
+        });
+        ok = true; return true;
+      }
       // "Run again" replaces the stage's earlier exchange (and rebuilds the seed if it is the first one);
       // a revision (userText) continues the conversation.
       const start = userText ? mod.thread.length : (st(stage.id).threadStart ?? mod.thread.length);
       const base = mod.thread.slice(0, start);
-      const withTable = stage.id === 'seams' && !userText ? `${seamBlock(mod.objectives)}\n\n---\n\n${prompt}` : stage.id === 'plan' && !userText ? `${pathwayBlock(mod.objectives) || '(No pathway table has been entered.)'}\n\n---\n\n${prompt}` : prompt;
+      // The validity pass is handed the mechanical counts, done in code, so it doesn't tally them itself.
+      const lintReport = stage.id === 'validity' && !userText ? mechanicalReport(scriptOnly(mod.stages.draft?.output || '')) : '';
+      const withTable = stage.id === 'seams' && !userText ? `${seamBlock(mod.objectives)}\n\n---\n\n${prompt}` : stage.id === 'plan' && !userText ? `${pathwayBlock(mod.objectives) || '(No pathway table has been entered.)'}\n\n---\n\n${prompt}` : lintReport ? `${lintReport}\n\n---\n\n${prompt}` : prompt;
       const content = base.length === 0 ? `${seedBlock(mod, withSources)}\n\n---\n\n${withTable}` : withTable;
       const thread = [...base, { role: 'user', content }];
       let send = thread.length > 1 ? [{ ...thread[0], content: freshSeed(thread[0].content, mod, withSources) }, ...thread.slice(1)] : thread;
@@ -404,7 +430,7 @@ Don't invent objectives. Reply with the JSON array only.`;
     const undecided = editorItems.length - done - skipped;
     setApplying(true);
     const ok = await run(draft, `Apply these fixes from the editor review to the latest script. Change nothing else. Then output the full revised script in the same format.\n\n${text}`,
-      { applied: () => ({ count: done, skipped, undecided, total: editorItems.length, at: Date.now() }) });
+      { patch: text, applied: () => ({ count: done, skipped, undecided, total: editorItems.length, at: Date.now() }) });
     setApplying(false);
     if (!ok) return;   // the run failed or was stopped: leave the stages and your choices as they were
     setFixes(''); setMoreOpen(false);
