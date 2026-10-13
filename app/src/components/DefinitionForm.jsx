@@ -16,7 +16,7 @@ export default function DefinitionForm({ kind, initial, onSave, onCancel, onDupl
   const setSlot = (id, v) => setD(x => ({ ...x, slots: { ...x.slots, [id]: v } }));
   const setPersona = (id, v) => setD(x => ({ ...x, personas: { ...x.personas, [id]: v } }));
   const setSpeaker = (i, patch) => setD(x => ({ ...x, speakers: x.speakers.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
-  const valid = d.name.trim() && (kind !== 'conversation' || (d.speakers.length >= 1 && d.speakers.every(s => s.name.trim()) && d.slots.cast.trim() && d.slots.craft.trim()));
+  const valid = d.name.trim() && (kind !== 'conversation' || (d.speakers.length >= 1 && d.speakers.every(s => s.name.trim()) && d.slots?.cast?.trim() && d.slots?.craft?.trim()));
 
   const text = (id, label, help, rows, value, onChange) => (
     <div key={id}>
@@ -83,7 +83,7 @@ export default function DefinitionForm({ kind, initial, onSave, onCancel, onDupl
           {!readOnly && <button type="button" className="btn mt-2" onClick={() => set({ speakers: [...d.speakers, { name: '', job: '', background: '' }] })}>Add speaker</button>}
         </div>
         {readOnly
-          ? <p className="rounded-md border border-rule bg-paper p-3 text-sm text-muted">This is the built-in conversation type. Its text lives in the kit's files (Advanced). To make your own version, duplicate it.</p>
+          ? <p className="rounded-md border border-rule bg-paper p-3 text-sm text-muted">This is the built-in conversation type. Its text lives in the tabs above. To make your own version, duplicate it.</p>
           : SLOT_FIELDS.map(f => text(f.id, f.label, f.help, f.rows, d.slots?.[f.id], v => setSlot(f.id, v)))}
       </>}
 
