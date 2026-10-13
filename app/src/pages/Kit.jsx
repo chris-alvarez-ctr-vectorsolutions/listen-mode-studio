@@ -85,7 +85,8 @@ export default function Kit() {
   const subHeading = label => <div className="px-2 pb-1 text-[11px] font-bold uppercase leading-snug tracking-wider text-ink">{label}</div>;
   const defRow = (kind, d, label) => row(tab === `def:${kind}:${d.id}` || (kind === 'conversation' && conv?.id === d.id), () => open(`def:${kind}:${d.id}`), label, d.builtin ? null : 'custom');
   const draftRow = kind => row(tab === `def:${kind}:new`, () => setParams({ tab: `def:${kind}:new` }), `New ${KIND_LABEL[kind].toLowerCase()}…`, 'unsaved');
-  const addBtn = (label, onClick) => <button className="mx-2 mt-1 rounded border border-rule px-1.5 py-0.5 text-xs font-medium text-muted hover:border-ink hover:text-ink" onClick={onClick}>{label}</button>;
+  const addBtn = (label, onClick) => <button className="shrink-0 rounded border border-rule px-1.5 py-0.5 text-xs font-medium text-muted hover:border-ink hover:text-ink" onClick={onClick}>{label}</button>;
+  const ADD = { industries: ['Add new', () => startNew('industry', null)], conversations: ['Add new', () => startNew('conversation', listDefinitions('conversation', lib)[0])] };
 
   // Industries are grouped by the prefix in their name ("EDU: K-12 Faculty" sits under EDU); ones without a prefix go under General.
   const industryGroups = list => {
@@ -105,16 +106,14 @@ export default function Kit() {
         {industryGroups(listDefinitions('industry', lib)).map(g => (
           <div key={g.label}>
             {subHeading(g.label)}
-            <div className="space-y-0.5">{g.items.map(d => defRow('industry', d, d.name.startsWith(`${g.label}:`) ? d.name.slice(g.label.length + 1).trim() : d.name))}</div>
+            <div className="ml-2 space-y-0.5 border-l-2 border-rule pl-1.5">{g.items.map(d => defRow('industry', d, d.name.startsWith(`${g.label}:`) ? d.name.slice(g.label.length + 1).trim() : d.name))}</div>
           </div>))}
         {draft?.kind === 'industry' && draftRow('industry')}
-        {addBtn('+ New industry', () => startNew('industry', null))}
       </div>);
     if (id === 'conversations') return (
       <div className="space-y-0.5 pb-2 pt-1">
         {listDefinitions('conversation', lib).map(d => defRow('conversation', d, d.name))}
         {draft?.kind === 'conversation' && draftRow('conversation')}
-        {addBtn('+ Copy a type', () => startNew('conversation', listDefinitions('conversation', lib)[0]))}
       </div>);
     if (id === 'files') return <div className="space-y-0.5 pb-2 pt-1">{files.filter(f => f.layer === 'Core').map(f => row(tab === f.key, () => open(f.key), f.name))}</div>;
     return <div className="space-y-0.5 pb-2 pt-1">{kit.stages.map(s => row(tab === `stage:${s.id}`, () => open(`stage:${s.id}`), `${s.n}. ${s.title}`))}</div>;
@@ -228,11 +227,14 @@ export default function Kit() {
           <div className="max-h-[75vh] overflow-y-auto">
             {SECTIONS.map(([id, label]) => (
               <div key={id} className="border-b border-rule last:border-b-0">
-                <button className={`flex w-full items-center justify-between rounded px-2 py-2 text-left text-[11px] font-bold uppercase tracking-widest ${section === id ? 'text-ink' : 'text-muted hover:text-ink'}`}
-                  aria-expanded={section === id} onClick={() => section !== id && goSection(id)}>
-                  <span>{label}</span>
-                  <span aria-hidden className="text-xs font-normal">{section === id ? '▾' : '▸'}</span>
-                </button>
+                <div className="flex items-center gap-1 pr-1">
+                  <button className={`flex min-w-0 flex-1 items-center gap-2 rounded px-2 py-2 text-left text-[11px] font-bold uppercase tracking-wide ${section === id ? 'text-ink' : 'text-muted hover:text-ink'}`}
+                    aria-expanded={section === id} onClick={() => section !== id && goSection(id)}>
+                    <span aria-hidden className="w-2 text-xs font-normal">{section === id ? '▾' : '▸'}</span>
+                    <span className="truncate">{label}</span>
+                  </button>
+                  {ADD[id] && addBtn(ADD[id][0], ADD[id][1])}
+                </div>
                 {section === id && sectionBody(id)}
               </div>))}
           </div>
