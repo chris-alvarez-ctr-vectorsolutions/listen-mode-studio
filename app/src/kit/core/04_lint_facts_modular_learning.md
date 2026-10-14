@@ -34,6 +34,6 @@ The app counts the mechanical checks itself (casual markers, one-word turns, em 
 
 ## D. Conversation feel (the rules are in §6a)
 
-- [ ] The host does more than ask, and asks one question at a time.
+- [ ] The host does more than ask, asks one question at a time, announces no question or story, and tags no question with "as you see it" or "from where you sit".
 - [ ] No "Okay," "Got it," "Right" or "Huh" opens turn after turn. Each is used at most once per part.
 - [ ] No Feel part or story ends on a stated lesson, and parts don't all share one pattern.

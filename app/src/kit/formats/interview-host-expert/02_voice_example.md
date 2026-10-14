@@ -12,10 +12,8 @@ RAY: And I'm Ray. Let's get into it.
 
 ## Host intro (only when the expert has a background; same asset as the open)
 
-DANA: Ray, you spent a long time in commercial kitchens before this, didn't you?
-RAY: Twenty-some years, mostly on the line, then training new cooks.
-DANA: Then you've seen every way a sandwich can go wrong.
-RAY: Most of them, yes.
+DANA: Ray, you started on the production floor before you moved into plant safety and maintenance. Do you still see a job the way you did back then?
+RAY: I like to think so. After working on the floor and then leading safety and maintenance, I can picture each role vividly.
 DANA: That's the kind of experience we'll lean on today.
 
 ## Close (a question or a callback, no thank-you)
@@ -27,7 +25,7 @@ RAY: Think about it on your next shift. We'll be back soon.
 
 An excerpt from the first topic part. Read it for how the hosts talk, not for what happens in it.
 
-DANA: Sharps. Ok. So what is a sharp?
+DANA: When I think of sharps, I think of needles. What else counts as a sharp?
 RAY: So, usually when people think of a sharp, they think of a needle, but a sharp can be anything that is capable of piercing the skin: nails, knives, blades, broken glass, metal... you get the idea.
 DANA: Ah so that sounds like the hard part: remembering that it's not just needles, it's anything that could puncture the skin.
 RAY: Exactly. And keep in mind you can still find needles in the workplace. Some people need to manage their diabetes or allergies with syringes.
