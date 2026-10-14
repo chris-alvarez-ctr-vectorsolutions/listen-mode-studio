@@ -29,6 +29,7 @@ import { formatDuration } from '../lib/runLog.js';
 import { notifyWhenAway } from '../lib/tabTitle.js';
 import { audioStale, staleStages, stampFor } from '../lib/staleness.js';
 import StageGuide from '../components/StageGuide.jsx';
+import { resolveSetup } from '../lib/definitions.js';
 const hostNames = setup => resolveSetup(setup).conversation.speakers.map(x => x.name);
 
 // Elapsed time and words so far, so a long generation can be told apart from a dead one.

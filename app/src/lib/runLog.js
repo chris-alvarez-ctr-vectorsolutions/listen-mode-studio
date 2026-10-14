@@ -17,13 +17,18 @@ export function summarize(log = []) {
   const byStage = {};
   for (const r of log) {
     const s = (byStage[r.stage] ||= { stage: r.stage, runs: 0, ms: 0, last: null });
-    s.runs += 1; s.ms += r.ms || 0; s.last = r;
+    s.runs += 1; s.ms += r.ms || 0; s.tokens = (s.tokens || 0) + (r.sent || 0) + (r.outTokens || 0); s.last = r;
   }
   return {
     runs: log.length,
     failed: log.filter(r => !r.ok).length,
     ms: log.reduce((n, r) => n + (r.ms || 0), 0),
+    tokensIn: log.reduce((n, r) => n + (r.sent || 0), 0),
+    tokensOut: log.reduce((n, r) => n + (r.outTokens || 0), 0),
     longest: done.reduce((a, r) => (!a || r.ms > a.ms ? r : a), null),
     byStage,
   };
 }
+
+// Dollars for a token count at per-million-token rates.
+export const costOf = (tokensIn, tokensOut, rates) => (tokensIn * (rates.in || 0) + tokensOut * (rates.out || 0)) / 1e6;
