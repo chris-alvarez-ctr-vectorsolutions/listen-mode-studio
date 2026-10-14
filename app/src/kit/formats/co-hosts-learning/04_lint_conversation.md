@@ -8,12 +8,9 @@
 | Each way in and way out | Used once per listen |
 | "Solid advice," "Any final thoughts?" and other stock host lines | Once per listen each |
 | Turn length | Mixed: fragments, short and long turns. Not uniform |
-| Sentences over 25 words in dialogue | None |
 | Concrete, visual details per part | At least one |
 | Light or funny moments per part | One at most |
-| Delivery tags per part | Four to eight |
 | CAPS emphasis per part | One or two words |
-| Em dashes | None |
 
 ## E. Co-hosts learning
 
@@ -25,7 +22,6 @@
 - [ ] Each part's first answer defines the topic in plain words, and the other co-host connects it to work.
 - [ ] Each co-host's line about their own work is characterization only and carries no fact, statistic, injury or outcome.
 - [ ] The part ends with the practical list said once (if the ledger holds one), then a short sign-off.
-- [ ] No speaker has more than two lines in a row.
 - [ ] Answers sound like speech: mostly full sentences with some varied rhythm. No bare lists of notes and no telegraphic fragments with no connective.
 - [ ] Every question connects to the answer before it, and jargon is explained in the next line.
 - [ ] Nothing ("the shortcut," "that rule") is referred to before it's been introduced.

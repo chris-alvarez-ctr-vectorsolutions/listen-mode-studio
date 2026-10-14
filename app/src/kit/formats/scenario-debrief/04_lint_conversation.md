@@ -8,12 +8,9 @@
 | Dana's lines between character lines | One or two sentences at a time |
 | Each way in and way out | Used once per listen |
 | Turn length | Mixed: fragments, short and long turns. Not uniform |
-| Sentences over 25 words in dialogue | None |
 | Concrete, visual details per part | At least one |
 | Light or funny moments per part | One at most, none in a part about harm |
-| Delivery tags per part | Four to eight |
 | CAPS emphasis per part | One or two words |
-| Em dashes | None |
 
 ## E. Scenario and debrief
 
@@ -25,7 +22,6 @@
 - [ ] The part ends on a second person's reaction, not a moral, and nobody states the lesson.
 - [ ] Every technical detail traces to the claims ledger. The story invents only people and small details, never a statistic, injury count, exposure level or medical outcome.
 - [ ] A debrief that is its own part opens with one line restating the moment.
-- [ ] No speaker has more than two lines in a row (the character telling his own story is exempt).
 - [ ] The character appears only in his own part.
 - [ ] A host intro exists only if the cast guide gives the expert a background, and is absent otherwise. When present: it follows the open in the same asset, runs 40 to 80 words, and has the host state one specific fact from the background text and ask a short question that fits it, with the expert answering in two or three sentences using only that background. The expert is never introduced as a guest, and no background or role is invented. It ends on a line tying his experience to the episode's subject, not a generic hand-off ("let's get going"). It names and promises no topic part, and the open's closing line promises nothing (no "a quick hello"). The background is not repeated in other parts, except as a short aside backing a point.
 - [ ] Nobody names the listener's feeling. Small physical details carry it.

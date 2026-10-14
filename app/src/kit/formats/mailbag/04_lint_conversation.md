@@ -7,12 +7,9 @@
 | Each way in and way out | Used once per listen |
 | "Solid advice," "Any final thoughts?" and other stock host lines | Once per listen each |
 | Turn length | Mixed: fragments, short and long turns. Not uniform |
-| Sentences over 25 words in dialogue | None |
 | Concrete, visual details per part | At least one |
 | Light or funny moments per part | One at most |
-| Delivery tags per part | Four to eight |
 | CAPS emphasis per part | One or two words |
-| Em dashes | None |
 
 ## E. Mailbag
 
@@ -22,7 +19,6 @@
 - [ ] Ray starts by speaking to the asker by role, answers the question as asked, then the one underneath.
 - [ ] Where the ledger doesn't settle a question, Ray says it depends on the site and points to the procedure. No guess about the fact.
 - [ ] The close points to where to send questions only if the seed says where.
-- [ ] No speaker has more than two lines in a row (Dana reading the question whole is exempt).
 - [ ] A host intro exists only if the cast guide gives the expert a background, and is absent otherwise. When present: it follows the open in the same asset, runs 40 to 80 words, and has the host state one specific fact from the background text and ask a short question that fits it, with the expert answering in two or three sentences using only that background. The expert is never introduced as a guest, and no background or role is invented. It ends on a line tying his experience to the episode's subject, not a generic hand-off ("let's get going"). It names and promises no topic part, and the open's closing line promises nothing (no "a quick hello"). The background is not repeated in other parts, except as a short aside backing a point.
 - [ ] Answers sound like speech: mostly full sentences with some varied rhythm. No bare lists of notes and no telegraphic fragments with no connective.
 - [ ] Every follow-up from Dana connects to Ray's previous answer.

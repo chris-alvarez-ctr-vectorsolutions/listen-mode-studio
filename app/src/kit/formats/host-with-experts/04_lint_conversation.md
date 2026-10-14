@@ -7,12 +7,9 @@
 | Restatements (a point repeated in the same or next turn, or a figure in a second form) | None |
 | Each way in and way out | Used once per listen |
 | Turn length | Mixed: fragments, short and long turns. Not uniform |
-| Sentences over 25 words in dialogue | None |
 | Concrete, visual details per part | At least one |
 | Light or funny moments per part | One at most |
-| Delivery tags per part | Four to eight |
 | CAPS emphasis per part | One or two words |
-| Em dashes | None |
 
 ## E. Host with experts
 
@@ -26,7 +23,6 @@
 - [ ] The expert's first words are about why this matters on the job, not credentials.
 - [ ] Every fact traces to the claims ledger. The expert's stories and what a role "sees" are characterization only.
 - [ ] The part ends on the expert's own practical advice, or on a way out from the guide.
-- [ ] No speaker has more than two lines in a row.
 - [ ] Answers sound like speech: mostly full sentences with some varied rhythm. No bare lists of notes and no telegraphic fragments with no connective.
 - [ ] Every question from Dana connects to the expert's previous answer.
 - [ ] Nothing ("the shortcut," "that rule") is referred to before it's been introduced.

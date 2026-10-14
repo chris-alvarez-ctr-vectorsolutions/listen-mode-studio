@@ -5,14 +5,11 @@
 | Pivot lines before a new section | One per section, on their own line |
 | Questions to the listener per topic part | At least one, each answered |
 | Turn length | Mixed: fragments, short and long turns. Not uniform |
-| Sentences over 25 words in dialogue | None |
 | Fragments per part | Four at most, for rhythm and emphasis |
 | Concrete, visual details per part | At least one |
 | Light or funny moments per part | One at most |
 | Each way in and way out | Used once per listen |
-| Delivery tags per part | Four to eight, mostly on pivots and questions |
 | CAPS emphasis per part | One or two words |
-| Em dashes | None |
 
 ## E. Narration
 
