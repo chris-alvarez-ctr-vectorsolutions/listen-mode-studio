@@ -340,21 +340,6 @@ export function resolveSetup(setup, lib = loadLibrary()) {
   return { industry, role, conversation, backgrounds, warnings };
 }
 
-// A few plain lines describing the chosen show, for prompts written outside the kit (the Seed template).
-export function setupSummary(setup, lib = loadLibrary()) {
-  const { industry, role, conversation } = resolveSetup(setup, lib);
-  const line = (label, def, ids) => {
-    if (!def) return '';
-    const bits = ids.map(id => (def[id] || '').trim()).filter(Boolean);
-    return `- ${label}: ${def.name}${bits.length ? `. ${bits.join(' ')}` : ''}`;
-  };
-  return [
-    line('Industry', industry, ['setting']),
-    line('Learner role', role, ['description', 'language']),
-    line('Show format', conversation, ['summary']),
-  ].filter(Boolean).join('\n');
-}
-
 // The "Show setup" prompt block. Empty when the chosen industry and role have nothing to say.
 export function setupBlock({ industry, role }) {
   const lines = (title, def, fields) => {

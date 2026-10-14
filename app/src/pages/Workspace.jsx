@@ -5,7 +5,7 @@ import { addRuleToKit, fillStagePrompt, loadKit, systemPrompt } from '../lib/kit
 import { callClaude } from '../lib/claude.js';
 import { mechanicalReport } from '../lib/lint.js';
 import { applyEdits, parseEdits, patchRequest, rewriteRequest } from '../lib/patches.js';
-import { composeSeed, fieldsFor, missingRequired, seedFieldsOf } from '../lib/seed.js';
+import { SEED_FIELDS, composeSeed, missingRequired, seedFieldsOf } from '../lib/seed.js';
 import { parsePerformance, scriptOnly, stripBannedTags } from '../lib/script.js';
 import { applySeams, parseSeams, seamBlock } from '../lib/seams.js';
 import { canMakeVariant, hasOwnRun, makeVariant, moveRunToVersion, resyncVariant, variantBehind, versionLabel, versionName } from '../lib/variants.js';
@@ -29,8 +29,6 @@ import { formatDuration } from '../lib/runLog.js';
 import { notifyWhenAway } from '../lib/tabTitle.js';
 import { audioStale, staleStages, stampFor } from '../lib/staleness.js';
 import StageGuide from '../components/StageGuide.jsx';
-import { resolveSetup, setupSummary } from '../lib/definitions.js';
-const convId = setup => resolveSetup(setup).conversation.id;
 const hostNames = setup => resolveSetup(setup).conversation.speakers.map(x => x.name);
 
 // Elapsed time and words so far, so a long generation can be told apart from a dead one.
@@ -131,7 +129,7 @@ export default function Workspace() {
     saveModule(cur()); setActive('ledger');
   };
 
-  const seedFieldList = fieldsFor(convId(m.setup));
+  const seedFieldList = SEED_FIELDS;
   const filledLabels = seedFieldList.filter(f => (seedFieldsOf(m)[f.id] || '').trim()).map(f => f.label);
   const objectiveCount = (m.objectives || []).length;
   const missingNow = missingRequired(seedFieldsOf(m)).filter(() => !m.sources.length);
@@ -359,7 +357,7 @@ export default function Workspace() {
   }
 
   async function copyPrompt() {
-    try { await navigator.clipboard.writeText(templatePrompt(setupSummary(cur().setup), convId(cur().setup))); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+    try { await navigator.clipboard.writeText(templatePrompt()); setCopied(true); setTimeout(() => setCopied(false), 2000); }
     catch { setImportMsg('Could not copy automatically. Open "Show the prompt" and copy it by hand.'); }
   }
   // Pasting only puts the text in the box. Pressing the button reads it and fills in the details. The pause is
@@ -648,7 +646,7 @@ Don't invent objectives. Reply with the JSON array only.`;
               </div>
               <details className="text-sm">
                 <summary className="cursor-pointer">Show the prompt</summary>
-                <textarea readOnly aria-label="Seed prompt" className="field mt-2 h-64 font-mono text-xs" value={templatePrompt(setupSummary(m.setup), convId(m.setup))} onFocus={e => e.target.select()} />
+                <textarea readOnly aria-label="Seed prompt" className="field mt-2 h-64 font-mono text-xs" value={templatePrompt()} onFocus={e => e.target.select()} />
               </details>
               {!imported ? (
                 <div className="space-y-2">
@@ -708,7 +706,7 @@ Don't invent objectives. Reply with the JSON array only.`;
               </div>
               {detailsOpen && (
                 <div className="space-y-6">
-              {fieldsFor(convId(m.setup)).map(f => (
+              {SEED_FIELDS.map(f => (
                   <div key={f.id}>
                     <label className="label" htmlFor={`seed-${f.id}`}>{f.label}{f.required && <span className="text-onair"> *</span>}</label>
                     <p className="mb-1 text-xs text-muted">{f.help}</p>

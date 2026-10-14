@@ -1,13 +1,15 @@
 // The "Template" route into the seed: a prompt an LXD pastes into any AI tool along with their source files,
 // and the parser that reads the document it writes back. Built from SEED_FIELDS so the two never drift.
-import { SEED_FIELDS, fieldsFor } from './seed.js';
+import { SEED_FIELDS } from './seed.js';
 import { normalizeObjective } from './pathways.js';
 
-export function templatePrompt(show = '', conversationId = '') {
-  const fields = fieldsFor(conversationId).map(f => `## ${f.label}\n(${f.help}${f.required ? ' Required.' : ' Write None if the sources say nothing.'})`).join('\n\n');
-  return `You are helping a learning experience designer prepare the seed for a two-host training audio module. Read the attached source files (course script, slide deck, SOPs, objectives, reference material) and write one plain-text document in exactly the format below.
+// The inputs are shared by every variant of a module, so this prompt says nothing about industry, learner role or show
+// format: those are chosen later, per variant.
+export function templatePrompt() {
+  const fields = SEED_FIELDS.map(f => `## ${f.label}\n(${f.help}${f.required ? ' Required.' : ' Write None if the sources say nothing.'})`).join('\n\n');
+  return `You are helping a learning experience designer prepare the shared inputs for a training audio module. Read the attached source files (course script, slide deck, SOPs, objectives, reference material) and write one plain-text document in exactly the format below.
 
-${show ? `The show is already set up. Write for this audience and setting. Use it to choose the wording of the Audience and sector section and of the objectives. It is context only: never take a claim or a fact from it.\n${show}\n\n` : ''}Rules:
+Rules:
 - Put the whole document inside ONE fenced code block that starts with \`\`\`markdown and ends with \`\`\`. This keeps the "##" headings and the "|" characters as plain text when the document is copied. Write nothing outside the code block.
 - Use only what the sources say. Do not invent objectives, claims, sources or numbers. If a section has nothing in the sources, write None.
 - Keep every heading exactly as written, on its own line, starting with "## ".
