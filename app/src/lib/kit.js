@@ -178,29 +178,45 @@ export function importKit(json) {
 // Which parts of the kit each stage is sent. The production guide and the instructions go to every stage. A stage
 // leaves out what it has no use for, so the rules that matter to it aren't buried: the ledger doesn't need the
 // voice example or the lint list, and rendering doesn't need the pattern library.
+//
+// Within the guide and the voice example a stage can also leave out whole sections it has no use for, matched by their
+// "## " heading: dropGuide for the guide (4 modular, 6a conversation feel, 7 craft, 8 length, 9 render conventions) and
+// dropVoice for the voice example. A stage that writes no dialogue doesn't need the conversation rules; only the
+// performance pass needs the ElevenLabs conventions.
 const STAGE_NEEDS = {
-  ledger: { setup: false, voice: false, patterns: false, lint: false },
-  plan: { voice: false, lint: false },
-  beats: { lint: false },
-  validity: { patterns: false },
-  performance: { setup: false, voice: false, patterns: false, lint: false },
-  seams: { setup: false, patterns: false, lint: false },
+  ledger: { setup: false, format: false, voice: false, patterns: false, lint: false, dropGuide: [/^4\./, /^6a\./] },
+  plan: { setup: false, format: false, voice: false, patterns: false, lint: false, dropGuide: [/^6a\./] },
+  beats: { lint: false, dropGuide: [/^9\./], dropVoice: [/^Register sample/, /^Register$/, /^Principles from review/] },
+  draft: { dropGuide: [/^9\./] },
+  validity: { patterns: false, dropGuide: [/^9\./] },
+  editor: { dropGuide: [/^9\./] },
+  performance: { setup: false, voice: false, patterns: false, lint: false, dropGuide: [/^4\./, /^6\./, /^6a\./, /^7\./, /^8\./] },
+  seams: { setup: false, patterns: false, lint: false, dropGuide: [/^9\./] },
+};
+
+// Removes the "## " sections whose heading matches one of the patterns. Text before the first heading stays.
+const dropSections = (text, patterns = []) => {
+  if (!patterns.length || !text) return text;
+  return text.split(/^(?=## )/m).filter(part => !(part.startsWith('## ') && patterns.some(p => p.test(part.slice(3).split('\n')[0].trim())))).join('');
 };
 
 // System prompt for a call: the instructions, the show setup, and the reference files, with the conversation
 // type's slots filled in for the module's setup. With a stage ID, only the parts that stage needs.
 export function systemPrompt(kit, setup = null, stageId = null, lib = loadLibrary()) {
-  const need = { setup: true, voice: true, patterns: true, lint: true, ...(STAGE_NEEDS[stageId] || {}) };
+  const need = { setup: true, format: true, voice: true, patterns: true, lint: true, ...(STAGE_NEEDS[stageId] || {}) };
   const r = resolveSetup(setup, lib);
   const c = r.conversation;
   const slot = name => (c.builtin ? kit.files[fKey(c.id, name)] : c.slots?.[name]) ?? '';
   const block = setupBlock(r);
+  const cut = t => dropSections(t, need.dropGuide);
   const left = [!need.voice && 'the voice example', !need.patterns && 'the pattern library', !need.lint && 'the lint checklist'].filter(Boolean);
   const secs = [
     { pieces: [kit.files.projectInstructions + (left.length ? `\n\nFor this stage, ${left.join(', ')} ${left.length > 1 ? 'are' : 'is'} not included: not needed here.` : '')] },
     ...(block && need.setup ? [{ pieces: [block] }] : []),
-    { heading: '# 01_production_guide.md', pieces: [kit.files.guideIntro, applyBackgrounds(slot('cast'), c, r.backgrounds), kit.files.guideRules, slot('craft'), kit.files.guideStudio] },
-    ...(need.voice ? [{ heading: '# 02_voice_example.md', pieces: [slot('voice'), kit.files.reviewExamples || ''] }] : []),
+    { heading: '# 01_production_guide.md', pieces: need.format
+      ? [kit.files.guideIntro, applyBackgrounds(slot('cast'), c, r.backgrounds), cut(kit.files.guideRules), cut(slot('craft')), kit.files.guideStudio]
+      : [kit.files.guideIntro, cut(kit.files.guideRules), kit.files.guideStudio] },   // the shared rules only: the ledger and the outline don't depend on a show format
+    ...(need.voice ? [{ heading: '# 02_voice_example.md', pieces: [dropSections(slot('voice'), need.dropVoice), kit.files.reviewExamples || ''] }] : []),
     ...(need.patterns ? [{ heading: '# 03_pattern_library.md', pieces: [kit.files.patternLibrary] }] : []),
     ...(need.lint ? [{ heading: '# 04_lint_checklist.md', pieces: [kit.files.lintFacts, slot('lint'), kit.files.lintLength] }] : []),
   ];

@@ -1,7 +1,7 @@
 // Which stages were built from something that has since changed. Each stage records a fingerprint of its input when it
 // runs (basedOn). Stages recorded before that existed fall back to comparing run times in the run log.
 const INPUT = { plan: 'ledger', beats: 'plan', draft: 'beats', validity: 'draft', editor: 'draft', performance: 'script' };   // seams are rebuilt from the performance output; see the Seams stage
-const TITLES = { ledger: 'The claims ledger', plan: 'The episode plan', beats: 'The beat sheets', draft: 'The draft', script: 'The script' };
+const TITLES = { ledger: 'The claims ledger', plan: 'The outline', beats: 'The beat sheets', draft: 'The draft', script: 'The script' };
 
 // Heading lines are ignored so renaming a chapter title doesn't count as a change.
 const textOf = (m, id) => (id === 'script' ? m.currentScript : m.stages?.[id]?.output) || '';

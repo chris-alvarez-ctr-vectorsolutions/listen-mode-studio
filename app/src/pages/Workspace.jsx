@@ -139,8 +139,8 @@ export default function Workspace() {
   const isVersion = !!m.parentId;
   const ownRun = hasOwnRun(m);          // a module made before variants existed still holds its own script
   const showExperience = isVersion;     // the module itself is only the inputs
-  const no = s => (isVersion ? s.n - 2 : s.n);      // a variant numbers its own steps from 1
-  const progressOf = x => { const last = [...stages].reverse().find(t => t.id !== 'ledger' && x.stages?.[t.id]?.output); return x.parts?.assembly?.length ? 'Script ready' : last ? `${last.title} done` : 'Not started'; };
+  const no = s => (isVersion ? s.n - 3 : s.n);      // a variant numbers its own steps from 1, at the beat sheets
+  const progressOf = x => { const last = [...stages].reverse().find(t => t.id !== 'ledger' && t.id !== 'plan' && x.stages?.[t.id]?.output); return x.parts?.assembly?.length ? 'Script ready' : last ? `${last.title} done` : 'Not started'; };
   const update = async patch => { const next = { ...cur(), ...patch }; setBoth(next); await saveModule(next); return next; };
   const st = sid => cur().stages[sid] || { status: 'idle' };
   const unlocked = idx => idx === 0 || ['approved', 'skipped'].includes(st(stages[idx - 1].id).status);
@@ -263,7 +263,13 @@ export default function Workspace() {
     return update({ stages: { ...cur().stages, [stage.id]: { ...st(stage.id), status: 'approved' } } });
   };
   const nextOf = stage => { const i = stages.findIndex(s => s.id === stage.id); return stages[i + 1]; };
-  const runNext = stage => { const nx = nextOf(stage); if (!nx) return; setActive(nx.id); if (!st(nx.id).output) run(nx); };
+  // On the module itself the outline is the last step. What follows it is making a variant, which is where the beat
+  // sheets and everything after them happen.
+  const endsInputs = stage => !isVersion && stage.id === 'plan';
+  const runNext = stage => {
+    if (endsInputs(stage)) { setActive('newversion'); return; }
+    const nx = nextOf(stage); if (!nx) return; setActive(nx.id); if (!st(nx.id).output) run(nx);
+  };
   // Approve this stage (if it isn't yet) and move on: to the next stage, running it if it has no output yet.
   const approveAndNext = async stage => {
     if (st(stage.id).status !== 'approved') { const done = approve(stage); if (!done) return; await done; }
@@ -277,7 +283,7 @@ export default function Workspace() {
     await update(root);
     navigate(`/m/${version.id}`);
   };
-  const nextLabel = stage => { const nx = nextOf(stage); return nx ? `Next: ${no(nx)}. ${nx.title} ›` : ''; };
+  const nextLabel = stage => { if (endsInputs(stage)) return 'Make a variant ›'; const nx = nextOf(stage); return nx ? `Next: ${no(nx)}. ${nx.title} ›` : ''; };
   const skip = stage => update({ stages: { ...cur().stages, [stage.id]: { status: 'skipped', output: '' } } });
 
   function revise(stage) {
@@ -457,7 +463,7 @@ Don't invent objectives. Reply with the JSON array only.`;
   const requested = params.get('stage') || 'seed';
   const reqIdx = stages.findIndex(s => s.id === requested);
   const allowed = requested === 'seed' || (requested === 'newversion' && !isVersion)
-    || (reqIdx >= 0 && unlocked(reqIdx) && !(isVersion && requested === 'ledger') && !(!showExperience && reqIdx > 0));
+    || (reqIdx >= 0 && unlocked(reqIdx) && !(isVersion && (requested === 'ledger' || requested === 'plan')) && !(!showExperience && reqIdx > 1));
   const active = allowed ? requested : 'seed';
   const stage = stages.find(s => s.id === active);
   const out = stage ? st(stage.id).output : '';
@@ -495,9 +501,9 @@ Don't invent objectives. Reply with the JSON array only.`;
         <ol className="mt-6 space-y-1">
           {!isVersion && (
             <>
-              <li className="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Inputs</li>
+              <li className="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">Inputs and outline</li>
               <li><button className={`w-full rounded-md px-3 py-2 text-left text-sm ${active === 'seed' ? 'bg-ink text-white' : 'hover:bg-panel'}`} onClick={() => setActive('seed')}>1. Seed</button></li>
-              {stages.slice(0, 1).map((s, i) => {
+              {stages.slice(0, 2).map((s, i) => {
             const mark = applying && s.id === 'editor' ? 'applying…' : stale[s.id] ? '⟳ outdated' : status === 'approved' ? (s.id === 'validity' && st('editor').applied?.count ? '✓ edited' : '✓') : status === 'skipped' ? 'skipped' : status === 'ready' ? 'review' : '';
                 return (
                   <li key={s.id}>
@@ -538,7 +544,7 @@ Don't invent objectives. Reply with the JSON array only.`;
             <>
               <li className="px-1 pb-1 pt-8 text-xs font-semibold uppercase tracking-wide text-muted">Listening experience</li>
               {stages.map((s, i) => {
-                if (s.id === 'ledger' && isVersion) return null;
+                if (isVersion && (s.id === 'ledger' || s.id === 'plan')) return null;   // borrowed from the module, not repeated here
                 if (!isVersion && i === 0) return null;
                 const mark = applying && s.id === 'editor' ? 'applying…' : stale[s.id] ? '⟳ outdated' : status === 'approved' ? (s.id === 'validity' && st('editor').applied?.count ? '✓ edited' : '✓') : status === 'skipped' ? 'skipped' : status === 'ready' ? 'review' : '';
                 return (
@@ -554,7 +560,7 @@ Don't invent objectives. Reply with the JSON array only.`;
               ⚠ {staleParts.length} recorded part{staleParts.length > 1 ? 's' : ''} out of date after a claim changed
             </Link></li>
           )}
-          <li><Link to={`/m/${m.id}/render`} className={`mt-1 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>{isVersion ? 8 : 10}. Render audio{audioOutdated > 0 && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900">⟳ outdated</span>}</Link></li>
+          <li><Link to={`/m/${m.id}/render`} className={`mt-1 block rounded-md border px-3 py-2 text-sm ${m.parts ? 'border-onair text-onair' : 'border-rule text-muted hover:text-ink'}`}>{isVersion ? 7 : 10}. Render audio{audioOutdated > 0 && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-900">⟳ outdated</span>}</Link></li>
             </>
           )}
           {(m.runLog || []).length > 0 && (
@@ -599,16 +605,16 @@ Don't invent objectives. Reply with the JSON array only.`;
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold">New variant</h2>
-                <p className="text-sm text-muted">Choose the show format and who it is for. The variant uses this module's seed and claims ledger.</p>
+                <p className="text-sm text-muted">Choose the show format and who it is for. The variant uses this module's seed, claims ledger and outline, and writes its own beat sheets for this audience.</p>
               </div>
-              {!ready && <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Approve or skip the claims ledger first, so a variant has solid inputs to build on.</p>}
+              {!ready && <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Approve the outline first (and settle the claims ledger before it), so a variant has solid inputs to build on.</p>}
               <SetupCard title="Basics" hint="" setup={v.setup} onChange={setup => setNv({ setup })} />
               <div className="flex justify-end border-t border-rule pt-4">
                 <button className="btn-primary" disabled={!ready} onClick={async () => {
                   await saveModule(cur());
                   const created = await saveModule(makeVariant(cur(), v.setup));
                   setNv(null);
-                  navigate(`/m/${created.id}?stage=plan`);
+                  navigate(`/m/${created.id}?stage=beats`);
                 }}>Create the variant ›</button>
               </div>
             </div>
@@ -853,7 +859,7 @@ Don't invent objectives. Reply with the JSON array only.`;
                         Revise{m.notes.length ? ` with ${m.notes.length} line note${m.notes.length > 1 ? 's' : ''}` : sectionNoteCount ? ` with ${sectionNoteCount} section note${sectionNoteCount > 1 ? 's' : ''}` : claimNoteCount ? ` with ${claimNoteCount} claim note${claimNoteCount > 1 ? 's' : ''}` : ''}
                       </button>
                     )}
-                    {nextOf(stage) && (
+                    {(nextOf(stage) || endsInputs(stage)) && (
                       <button className="btn-primary" disabled={!!busy} onClick={() => approveAndNext(stage)}>
                         {approved ? '' : 'Approve · '}{nextLabel(stage)}
                       </button>

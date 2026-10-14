@@ -4,7 +4,7 @@ import { listModels, listVoices } from '../lib/eleven.js';
 import { clearTheme, hasCustomTheme, saveTheme, themeBlob } from '../lib/theme.js';
 
 const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'];
-const EFFORT_STEPS = [['ledger', 'Claims ledger (and claim fixes)'], ['plan', 'Episode plan'], ['beats', 'Beat sheets'], ['draft', 'Draft'], ['validity', 'Validity pass'], ['editor', 'Editor pass'], ['patch', 'Applying the editor\'s fixes'], ['performance', 'Performance pass'], ['seams', 'Seams'], ['helper', 'Reading objectives from the seed']];
+const EFFORT_STEPS = [['ledger', 'Claims ledger (and claim fixes)'], ['plan', 'Outline'], ['beats', 'Beat sheets'], ['draft', 'Draft'], ['validity', 'Validity pass'], ['editor', 'Editor pass'], ['patch', 'Applying the editor\'s fixes'], ['performance', 'Performance pass'], ['seams', 'Seams'], ['helper', 'Reading objectives from the seed']];
 
 export default function Settings() {
   const [s, setS] = useState(loadSettings);

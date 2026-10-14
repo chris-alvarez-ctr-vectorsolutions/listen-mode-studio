@@ -6,7 +6,7 @@ export const DEFAULT_STAGES = [
     gate: 'An SME signs the ledger before anything is rendered for real.',
     purpose: "The list of facts the script is allowed to say. Every line of the script traces back to it.",
     check: ["Is each claim true, in scope and worded plainly?", "For each flagged claim, accept the proposed fix, edit it, or send it to the SME.", "Have the SME sign it before anything is rendered for real."],
-    next: "Episode plan",
+    next: "Outline",
     prompt: `From the source content for {module} (the seed text and any attached source files), build a claims ledger as a table:
 ID (C01, C02...) | the claim in one plain sentence | source (learning objective and slide or reference) | flag | proposed fix.
 Flag any claim with a scope limit, a conflict with another claim, or a claim the source content doesn't support. Leave the flag empty for claims with no problem.
@@ -15,34 +15,33 @@ Don't merge, generalize or add claims. Then list any claim from other attached m
 Stop when done.`,
   },
   {
-    id: 'plan', n: 3, title: 'Episode plan', kind: 'doc',
-    gate: 'You approve the plan.',
-    purpose: "A one-page blueprint of the episode, before anything is written. It is the cheap place to catch a wrong structure, before the beat sheets and the script are built on it.",
-    check: ["Does each part cover the right objective, with an angle you would want to hear?", "Do the angles and the ways in and out differ from part to part?", "Are the claims you care about assigned to a part?", "Does \"Needs your attention\" list anything to settle first?"],
-    next: "Beat sheets, where each part gets its outline",
-    prompt: `Using the production guide and the module files above, plan the episode for {module}. The pathway table above is fixed: the objectives, their KFD types, the versions each one needs, the part IDs and the listens. Don't add, drop, rename or re-route any of it. If the table is missing, say so and stop.
-This is a one-page blueprint, not the beat sheets. Keep every table cell to one short line. Do not write beat-level detail (holds, constraints, shapes, word counts, sample lines): the next stage does that.
-Use exactly these five sections, each starting with a "##" heading:
-## Anchor
-One line: the single setting or object (a property tray, a booking counter) that every part, including Test-up and Reinforced versions, will use concretely so the parts hold together without bridges. It must come from the source content.
+    id: 'plan', n: 3, title: 'Outline', kind: 'doc',
+    gate: 'You approve the outline.',
+    purpose: "The outline of the content, the same for every variant. It says what each part has to cover, which claims it uses, and how the listens are built. It says nothing about who it is for or what scenario it uses: each variant decides that.",
+    check: ["Does each part cover the right objective, and only that?", "Are the claims you care about assigned to a part?", "Do the listens look right, with at least three chapters each?", "Does \"Needs your attention\" list anything to settle first?"],
+    next: "Variants. Make one for each industry and role, and each gets its own beat sheets",
+    prompt: `Using the production guide and the module files above, write the outline of the content for {module}. The pathway table above is fixed: the objectives, their KFD types, the versions each one needs, the part IDs and the listens. Don't add, drop, rename or re-route any of it. If the table is missing, say so and stop.
+This outline is shared by every variant of the module, each for a different industry and learner role. So it holds only what does not depend on the audience. Do not choose a scenario, a setting, a story, a way in or out, or an example, and do not name an industry or a role. Those are chosen per variant, in the beat sheets. Keep every table cell to one short line.
+Use exactly these four sections, each starting with a "##" heading:
 ## Parts
-A table with one row per part in the pathway table, in listen order, plus the open and the close. Columns: Part ID | Objective | Angle (one line: the scenario, story or evidence it will use) | Way in, way out | Claims (ledger IDs). A Test-up is a harder scene with the same facts, and the learner never heard the Base. A Reinforced version gives a Feel topic more weight with the same facts, and replaces the Base. The open's angle names the sharpest line (a story quote or striking detail) from a position that plays in every listen, never an agenda.
+A table with one row per part in the pathway table, in listen order, plus the open and the close. Columns: Part ID | Objective | What it must get across (one line, in plain words) | Claims (ledger IDs). A Test-up is a harder version with the same facts, and the learner never heard the Base. A Reinforced version gives a Feel topic more weight with the same facts, and replaces the Base. The open only covers content from positions that play in every listen.
 ## Plays in every listen
 One or two lines: which positions play in every listen, and what the open may promise.
 ## Listens
 A table copied from the pathway table. Columns: Listen | Parts (IDs) | Chapters | Estimated runtime. Order the rows from fewest chapters to most, and flag any listen under three chapters. Then one sentence describing the master script (the Full listen).
 ## Needs your attention
-A short bullet list of only real problems: an objective the ledger doesn't support, ledger claims no part uses, a listen under three chapters, or a part whose angle repeats another's. Write "Nothing." if there are none.
+A short bullet list of only real problems: an objective the ledger doesn't support, ledger claims no part uses, or a listen under three chapters. Write "Nothing." if there are none.
 Stop and wait for approval.`,
   },
   {
     id: 'beats', n: 4, title: 'Beat sheets', kind: 'doc',
     gate: 'A learning designer approves the beats.',
-    purpose: "An outline for each part: what is said, in what order, with which claims. The script is written from these, so changes are cheapest here.",
-    check: ["Does each part meet its objective, with a concrete detail worth hearing?", "Does each part take a different shape from the others?", "Are the required claims present, and none invented?"],
+    purpose: "An outline for each part, fitted to this variant's industry and learner role: the scenario it uses, how it opens and closes, what is said and with which claims. The script is written from these, so changes are cheapest here.",
+    check: ["Does the scenario fit this industry and role, and would the learner recognize it?", "Does each part meet its objective, with a concrete detail worth hearing?", "Does each part take a different shape and way in from the others?", "Are the required claims present, and none invented?"],
     next: "Draft, the first full script",
-    prompt: `Write a beat sheet for every asset in the approved plan: the open, every part in the pathway table (Base, Test-up, Reinforced or single version) and the close.
-Use the bullet style of the beats in the voice example. In every part, name how the anchor shows up, and, in a Know part, which turns are the host reacting, setting up a scenario or correcting a common assumption, not only asking. For each, include the shape the part will take (chosen from the pattern library, and different from the other parts), then: the objective, the way in and way out (none repeated within a listen), the one concrete detail, the claim IDs, the emotional target, any judgment hold question, and the word target. If the cast guide gives the expert a background, the open's beat sheet gives its cold-open line and where it comes from, and also covers the host intro that follows the open in the same asset: quote the background text it will use, the host states one specific fact from it and asks a short question that fits it (the expert is a co-host who already introduced himself, never a guest), the expert answers in two or three sentences using only that text, and the host ties his experience to the subject of the whole episode in one line (never a generic "let's get going"), without naming any topic part. If the cast guide gives no background, write no host intro and note that in the beat sheet. Never invent a background or a role question. No dialogue yet.
+    prompt: `Write a beat sheet for every asset in the approved outline, fitted to this show's industry and learner role (see the show setup above): the open, every part in the pathway table (Base, Test-up, Reinforced or single version) and the close.
+Start with a section headed "## Anchor": one line naming the single setting or object (a property tray, a booking counter) that every part, including Test-up and Reinforced versions, will use concretely so the parts hold together without bridges. It must come from the source content and suit this industry and role. Then one section per asset.
+Use the bullet style of the beats in the voice example. In every part, name how the anchor shows up, and, in a Know part, which turns are the host reacting, setting up a scenario or correcting a common assumption, not only asking. For each, include the shape the part will take (chosen from the pattern library, and different from the other parts), then: the objective, the angle (one line: the scenario, story or evidence it will use, chosen for this industry and role), the way in and way out (none repeated within a listen), the one concrete detail, the claim IDs, the emotional target, any judgment hold question, and the word target. If the cast guide gives the expert a background, the open's beat sheet gives its cold-open line and where it comes from, and also covers the host intro that follows the open in the same asset: quote the background text it will use, the host states one specific fact from it and asks a short question that fits it (the expert is a co-host who already introduced himself, never a guest), the expert answers in two or three sentences using only that text, and the host ties his experience to the subject of the whole episode in one line (never a generic "let's get going"), without naming any topic part. If the cast guide gives no background, write no host intro and note that in the beat sheet. Never invent a background or a role question. No dialogue yet.
 Stop and wait for approval.`,
   },
   {
