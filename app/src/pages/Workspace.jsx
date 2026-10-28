@@ -141,6 +141,7 @@ export default function Workspace() {
   const ownRun = hasOwnRun(m);          // a module made before variants existed still holds its own script
   const showExperience = isVersion;     // the module itself is only the inputs
   const no = s => (isVersion ? s.n - 3 : s.n);      // a variant numbers its own steps from 1, at the beat sheets
+  const firstVariantStage = stages.find(s => s.id === 'beats');
   const progressOf = x => { const last = [...stages].reverse().find(t => t.id !== 'ledger' && t.id !== 'plan' && x.stages?.[t.id]?.output); return x.parts?.assembly?.length ? 'Script ready' : last ? `${last.title} done` : 'Not started'; };
   const update = async patch => { const next = { ...cur(), ...patch }; setBoth(next); await saveModule(next); return next; };
   const st = sid => cur().stages[sid] || { status: 'idle' };
@@ -594,7 +595,7 @@ Don't invent objectives. Reply with the JSON array only.`;
                 await deleteModule(m.id);
                 navigate(parent ? `/m/${parent.id}` : '/');
               }}>Delete this variant</button>
-              <button className="btn-primary" onClick={() => setActive('plan')}>Next: {no(stages[1])}. {stages[1].title} ›</button>
+              <button className="btn-primary" onClick={() => setActive(firstVariantStage.id)}>Next: {no(firstVariantStage)}. {firstVariantStage.title} ›</button>
             </div>
           </div>
         )}
