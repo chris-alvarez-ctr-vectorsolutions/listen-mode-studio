@@ -7,7 +7,9 @@ export const LOCKS = [
   { id: 'open', label: 'Open: can test out' },
   { id: 'locked', label: 'Compliance-locked: tests up, never out' },
   { id: 'fallback', label: 'Open today, with a test-up in case it gets locked' },
+  { id: 'always', label: 'No pre-check: always plays, one version' },
 ];
+const TESTUP_LOCKS = ['locked', 'fallback'];
 export const FEEL_LOW_MAX = 3;   // 1-5 agreement: 3 or lower is low, 4 and 5 are high
 export const MIN_CHAPTERS = 3;   // below this a listen is not worth it; the LMS routes the learner to the article
 
@@ -25,7 +27,7 @@ export function normalizeObjective(o) {
     type,
     subscale: find(SUBSCALES[type], o.subscale) || SUBSCALES[type][0],
     policy: find(POLICIES, o.policy) || (type === 'Feel' ? 'Remediate' : 'Gate'),
-    lock: type === 'Know' && (lock === 'locked' || lock === 'fallback') ? lock : 'open',
+    lock: type === 'Know' && LOCKS.some(l => l.id === lock) ? lock : 'open',
     audio: type !== 'Do',
   };
 }
@@ -38,7 +40,7 @@ export const inAudio = o => !!topicKey(o.id) && o.audio !== false && o.type !== 
 
 export function versionsFor(o) {
   if (!inAudio(o)) return [];
-  if (o.type === 'Know') return o.lock === 'open' || !o.lock ? ['base'] : ['base', 'testup'];
+  if (o.type === 'Know') return TESTUP_LOCKS.includes(o.lock) ? ['base', 'testup'] : ['base'];
   if (o.type === 'Feel' && o.policy === 'Remediate') return ['base', 'reinforced'];
   return ['universal'];
 }
@@ -48,6 +50,7 @@ export function routeOf(o) {
   if (!inAudio(o)) return { kind: 'none', text: 'Not in the audio. The simulation runs for every learner.' };
   if (o.type === 'Know') {
     if (o.lock === 'locked') return { kind: 'testUp', text: 'Compliance-locked, so it never tests out. Pre-check correct: the test-up replaces the base. Otherwise the base plays.' };
+    if (o.lock === 'always') return { kind: 'always', text: 'No pre-check item, so it never tests out or up. The base plays for every learner.' };
     if (o.lock === 'fallback') return { kind: 'testOut', text: 'Tests out today: pre-check correct removes the base. If the compliance lock is confirmed, the test-up replaces the base instead.' };
     return { kind: 'testOut', text: 'Pre-check correct: the learner tests out and the base is removed. Otherwise the base plays.' };
   }
@@ -79,7 +82,7 @@ export function planListens(objectives) {
   for (const o of audio) {
     const r = routeOf(o);
     if (r.kind === 'testOut') listens.push({ name: `${o.id} tested out`, parts: build(x => (x === o ? null : idOf(x, 'base'))) });
-    if (o.type === 'Know' && o.lock !== 'open') listens.push({ name: `${o.id} tested up`, parts: build(x => idOf(x, x === o ? 'testup' : 'base')) });
+    if (o.type === 'Know' && TESTUP_LOCKS.includes(o.lock)) listens.push({ name: `${o.id} tested up`, parts: build(x => idOf(x, x === o ? 'testup' : 'base')) });
     if (r.kind === 'reinforce') listens.push({ name: `${o.id} reinforced`, parts: build(x => idOf(x, x === o ? 'reinforced' : 'base')) });
   }
   return listens;
@@ -93,7 +96,7 @@ export function pathwayWarnings(objectives) {
     if (!k) { w.push('An objective has no ID.'); continue; }
     if (seen.has(k)) w.push(`${o.id} appears twice.`);
     seen.add(k);
-    if (o.type === 'Know' && o.policy === 'Ask') w.push(`${o.id}: a Know objective with the Ask policy is unusual. Check it.`);
+    if (o.type === 'Know' && o.policy === 'Ask' && o.lock !== 'always') w.push(`${o.id}: a Know objective with the Ask policy is unusual. Check it.`);
   }
   const n = (objectives || []).filter(inAudio).length;
   if ((objectives || []).length && n < MIN_CHAPTERS) w.push(`Only ${n} objective${n === 1 ? '' : 's'} in the audio. Listens below ${MIN_CHAPTERS} chapters are routed to the article.`);

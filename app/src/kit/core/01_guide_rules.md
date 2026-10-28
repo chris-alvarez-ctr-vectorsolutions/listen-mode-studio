@@ -10,6 +10,7 @@
 Routing is per objective, from the pre-check:
 - **Know, not locked:** a correct pre-check answer tests the learner out. The topic is removed from their listen.
 - **Know, compliance-locked:** never tests out. A correct pre-check answer plays the Test-up instead of the Base.
+- **Know, no pre-check:** never tests out or up. The Base plays for every learner, and there is no Test-up.
 - **Feel:** never removes content. A low score plays the Reinforced version instead of the Base.
 - **Do:** not in the audio. The simulation runs for every learner.
 

@@ -49,7 +49,7 @@ export default function PathwayEditor({ objectives, onChange, onSuggest, suggest
               {POLICIES.map(t => <option key={t}>{t}</option>)}
             </select>
             {o.type === 'Know' && (
-              <select aria-label="Compliance lock" className="select w-auto" value={o.lock} onChange={e => set(i, { lock: e.target.value })}>
+              <select aria-label="Pre-check and lock" className="select w-auto" value={o.lock} onChange={e => set(i, { lock: e.target.value })}>
                 {LOCKS.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
               </select>
             )}

@@ -63,6 +63,7 @@ export function compose(objectives, learners, seamIds = null) {
         outcome = 'out'; tag = 'tested out';
       }
     }
+    if (o.type === 'Know' && o.lock === 'always') note = 'No pre-check item, so it plays for every learner.';
     if (o.type === 'Feel') note = l.pre <= FEEL_LOW_MAX ? 'Low pre-check score. The audio still plays, and the interactive step picks up the low score.' : 'High pre-check score. Plays, same as always.';
     // A Feel topic with a Reinforced version has two parts, so the pre-check picks one: the Reinforced replaces the Base on a low score.
     if (o.type === 'Feel' && r.kind === 'reinforce') {

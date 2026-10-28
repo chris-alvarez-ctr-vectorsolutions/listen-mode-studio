@@ -398,7 +398,7 @@ export default function Workspace() {
 - "type": Know, Feel or Do.
 - "subscale": Know is Remember or Observe; Feel is Believe, Value or Perceive; Do is Activate or Apply.
 - "policy": Gate, Remediate, Ask or Never skipped, as the source states it. If it doesn't, use Gate for Know and Do, and Remediate for Feel.
-- "lock" (Know only): "locked" if the source says it is compliance-locked or can't test out; "fallback" if it says test-out is allowed today but a lock may be confirmed; otherwise "open".
+- "lock" (Know only): "always" if the source says it has no pre-check item and every learner hears it; "locked" if it says it is compliance-locked (it has a pre-check item but can't test out); "fallback" if it says test-out is allowed today but a lock may be confirmed; otherwise "open".
 Don't invent objectives. Reply with the JSON array only.`;
       const reply = await callClaude({
         system: 'You read training course seeds and scripts and extract their learning objectives. You reply with JSON only.',

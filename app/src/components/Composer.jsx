@@ -121,7 +121,8 @@ export default function Composer({ objectives, parts, urls, timings, gap, rowFor
     const maxFails = effectivePolicy(o) === 'Gate' ? MAX_FAILS : 1;
     return (
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-        {o.type === 'Know' && (
+        {o.type === 'Know' && o.lock === 'always' && <span className="text-muted">No pre-check</span>}
+        {o.type === 'Know' && o.lock !== 'always' && (
           <div role="group" aria-label={`${o.id} pre-check`} className="flex items-center gap-1">
             <span className="mr-1 text-muted">Pre-check</span>
             {['correct', 'incorrect'].map(v => (

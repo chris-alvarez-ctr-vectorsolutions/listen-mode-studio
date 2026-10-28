@@ -13,7 +13,12 @@ Rules:
 - Put the whole document inside ONE fenced code block that starts with \`\`\`markdown and ends with \`\`\`. This keeps the "##" headings and the "|" characters as plain text when the document is copied. Write nothing outside the code block.
 - Use only what the sources say. Do not invent objectives, claims, sources or numbers. If a section has nothing in the sources, write None.
 - Keep every heading exactly as written, on its own line, starting with "## ".
-- Content claims: one claim per line, as a plain sentence, with its source in square brackets at the end, for example [Cafe prep SOP, section 3.2]. No numbering or bullets.
+- Content claims: one claim per line, as a plain sentence, ending with the ID of the objective it supports (from the pathway table) and its source in square brackets, for example [K2 · Cafe prep SOP, section 3.2]. No numbering or bullets.
+- State each fact once, in its most specific form. Leave out a sentence that sums up or combines other claims (an outcome overview, an introduction), and a claim that repeats another in different words.
+- The audio teaches the Know and Feel objectives. Do objectives are practiced outside it. Leave out a claim that serves only a Do objective, such as how to choose between options, the order to do things in, or a "when X, do Y" rule. If a Know or Feel objective names the same fact, keep the claim once, under that objective's ID.
+- Write a claim or rule that holds only in some situations with its condition ("When someone ..., ..."). Never write "always", "first" or "never" without saying when.
+- Versions and constraints: only what the script must not say, or how it must say something. Don't restate a content claim there.
+- Anything else: only context a scriptwriter needs about the learners or the content. Leave out routing, permutation or assembly tables, chapter or item IDs, assessment formats and question counts, and notes about relabeling. The pathway table carries the routing, and the audio has no assessments. Include practice scenarios only for Know and Feel objectives, each ending with its objective ID in square brackets.
 - Learning objectives: one per line, written as what the learner can do.
 
 FORMAT
@@ -28,7 +33,7 @@ ID | Objective | Type | Subscale | Policy | Lock
 - Type: Know, Feel or Do.
 - Subscale: for Know, Remember or Observe. For Feel, Believe, Value or Perceive. For Do, Activate or Apply.
 - Policy: Gate, Remediate, Ask or Never skipped, as the sources state it. If they don't, use Gate for Know and Do, and Remediate for Feel.
-- Lock (Know only; write n/a for the rest): locked if the sources say it is compliance-locked or can't be tested out of; fallback if they say testing out is allowed today but a lock may be confirmed; otherwise open.
+- Lock (Know only; write n/a for the rest): always if the sources say it has no pre-check item and every learner hears it; locked if they say it is compliance-locked (it has a pre-check item but can't be tested out of); fallback if they say testing out is allowed today but a lock may be confirmed; otherwise open.
 
 Example lines:
 K1 | The learner can explain why focaccia is cooled before it is sliced. | Know | Remember | Gate | open
