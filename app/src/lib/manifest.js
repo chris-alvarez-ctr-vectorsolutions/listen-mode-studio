@@ -8,10 +8,11 @@ const LEGACY = ['normal', 'harder'];   // names from before the pathway rules
 
 // Part id -> { kind: 'part', pos, topic, variant } | { kind: 'quickTake', topic } | null.
 // Tolerates a DRAFT- prefix and export-index prefixes like "01_01-k1-normal".
+// Stops before a numeric topic like "51" in "01-51-base" (objective 5.1), so the topic isn't lost.
 export function classifyPart(rawId) {
   let id = rawId.replace(/^DRAFT-/i, '');
   let pos = null;
-  for (let m; (m = id.match(/^(\d+)[-_](.+)$/)); ) { pos = Number(m[1]); id = m[2]; }
+  for (let m; (m = id.match(/^(\d+)[-_](.+)$/)) && !(pos !== null && [...VARIANTS, ...LEGACY].includes(m[2].toLowerCase())); ) { pos = Number(m[1]); id = m[2]; }
   const qt = id.match(/^qt[-_](.+)$/i);
   if (qt) return { kind: 'quickTake', topic: qt[1].toLowerCase() };
   if (pos === null) return null;
