@@ -18,6 +18,8 @@ Rules:
 - The audio teaches the Know and Feel objectives. Do objectives are practiced outside it. Leave out a claim that serves only a Do objective, such as how to choose between options, the order to do things in, or a "when X, do Y" rule. If a Know or Feel objective names the same fact, keep the claim once, under that objective's ID.
 - Write a claim or rule that holds only in some situations with its condition ("When someone ..., ..."). Never write "always", "first" or "never" without saying when.
 - Versions and constraints: only what the script must not say, or how it must say something. Don't restate a content claim there.
+- Skip rules: keep every limit the sources set on what to teach or say, including an option that appears only as a wrong answer, even when it comes from an assessment or a Do objective.
+- A misconception (a wrong belief to correct) goes in Anything else only when a content claim states the correct version. Never move part of a claim out of Content claims into a misconception.
 - Anything else: only context a scriptwriter needs about the learners or the content. Leave out routing, permutation or assembly tables, chapter or item IDs, assessment formats and question counts, and notes about relabeling. The pathway table carries the routing, and the audio has no assessments. Include practice scenarios only for Know and Feel objectives, each ending with its objective ID in square brackets.
 - Learning objectives: one per line, written as what the learner can do.
 
